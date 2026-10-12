@@ -1,0 +1,21 @@
+name: app_ho_tro_nguoi_khiem_thi
+description: Giao diện nhận diện mệnh giá tiền Việt Nam hỗ trợ người khiếm thị.
+publish_to: none
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+  flutter: '>=3.41.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
