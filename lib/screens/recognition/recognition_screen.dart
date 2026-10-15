@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_constants.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/models/recognition_ui_state.dart';
 import '../../widgets/accessible_button.dart';
 import '../../widgets/camera_frame.dart';
 import '../../widgets/denomination_card.dart';
+import '../../widgets/mobile_page.dart';
 import '../../widgets/recognition_status.dart';
 
 class RecognitionScreen extends StatelessWidget {
@@ -41,174 +41,156 @@ class RecognitionScreen extends StatelessWidget {
             ? AppStrings.scanningNoResult
             : AppStrings.scanningNoResultReal)
         : AppStrings.noResult;
+    final cameraHeight =
+        (MediaQuery.sizeOf(context).height * .40).clamp(230.0, 360.0);
 
-    return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Center(
-            child: ConstrainedBox(
-              constraints:
-                  const BoxConstraints(maxWidth: AppConstants.contentMaxWidth),
-              child: Padding(
-                padding: const EdgeInsets.all(AppConstants.pagePadding),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Semantics(
-                      header: true,
-                      child: Text(
-                        AppStrings.appTitle,
-                        style: Theme.of(context).textTheme.headlineMedium,
-                      ),
-                    ),
-                    const SizedBox(height: AppConstants.sectionGap),
-                    if (state.isMock) ...[
-                      Container(
-                        padding: const EdgeInsets.all(AppConstants.cardPadding),
-                        decoration: BoxDecoration(
-                          color: AppColors.paleYellow,
-                          borderRadius:
-                              BorderRadius.circular(AppConstants.cornerRadius),
-                        ),
-                        child: const Text(
-                          AppStrings.simulationBanner,
-                          style: TextStyle(
-                            color: AppColors.navy,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: AppConstants.sectionGap),
-                    ],
-                    RecognitionStatus(state: state),
-                    const SizedBox(height: AppConstants.itemGap),
-                    ClipRRect(
-                      borderRadius:
-                          BorderRadius.circular(AppConstants.cornerRadius),
-                      child: Container(
-                        width: double.infinity,
-                        color: AppColors.navySoft,
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(
-                            minHeight: AppConstants.cameraMinHeight,
-                          ),
-                          child: cameraPreview == null
-                              ? const CameraFrame(child: _CameraPlaceholder())
-                              : Stack(
-                                  children: [
-                                    Positioned.fill(child: cameraPreview!),
-                                    const CameraFrame(
-                                      child: SizedBox(
-                                        height: AppConstants.cameraMinHeight,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: AppConstants.itemGap),
-                    DenominationCard(
-                      denomination: state.hasResult ? state.denomination : null,
-                      isMock: state.isMock,
-                      emptyMessage: emptyMessage,
-                    ),
-                    const SizedBox(height: AppConstants.sectionGap),
-                    if (state.hasResult) ...[
-                      AccessibleButton(
-                        key: const Key('replay_button'),
-                        label: AppStrings.replay,
-                        icon: Icons.volume_up_outlined,
-                        onPressed: onReplayResult,
-                      ),
-                      const SizedBox(height: AppConstants.itemGap),
-                      AccessibleButton(
-                        key: const Key('scan_button'),
-                        label: AppStrings.scanAgain,
-                        icon: Icons.center_focus_strong,
-                        primary: false,
-                        onPressed: onResetScan,
-                      ),
-                    ] else ...[
-                      AccessibleButton(
-                        key: const Key('scan_button'),
-                        label: isReady
-                            ? AppStrings.startScan
-                            : AppStrings.scanAgain,
-                        icon: Icons.center_focus_strong,
-                        onPressed: isReady ? onStartScanning : onResetScan,
-                      ),
-                      const SizedBox(height: AppConstants.itemGap),
-                      AccessibleButton(
-                        key: const Key('replay_button'),
-                        label: AppStrings.replay,
-                        icon: Icons.volume_up_outlined,
-                        primary: false,
-                        onPressed: null,
-                      ),
-                    ],
-                    const SizedBox(height: AppConstants.sectionGap),
-                    AccessibleButton(
-                      label: AppStrings.cameraPermissionTitle,
-                      icon: Icons.videocam_outlined,
-                      primary: false,
-                      onPressed: onOpenPermission,
-                    ),
-                    const SizedBox(height: AppConstants.itemGap),
-                    AccessibleButton(
-                      label: AppStrings.settingsTitle,
-                      icon: Icons.settings_outlined,
-                      primary: false,
-                      onPressed: onOpenSettings,
-                    ),
-                    const SizedBox(height: AppConstants.itemGap),
-                    AccessibleButton(
-                      label: AppStrings.guideTitle,
-                      icon: Icons.menu_book_outlined,
-                      primary: false,
-                      onPressed: onOpenGuide,
-                    ),
-                    if (debugControls != null) ...[
-                      const SizedBox(height: AppConstants.sectionGap),
-                      debugControls!,
-                    ],
-                  ],
-                ),
+    return MobilePage(
+      background: AppColors.navySoft,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: RecognitionStatus(state: state)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: AccessibleButton(
+                label: AppStrings.settingsTitle,
+                primary: false,
+                onPressed: onOpenSettings,
               ),
             ),
+          ],
+        ),
+        const SizedBox(height: 20),
+        SizedBox(
+          height: cameraHeight,
+          child: cameraPreview == null
+              ? CameraFrame(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Flexible(
+                        child: Container(
+                          height: 112,
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE7EFEB),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Container(
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: const Color(0xFF557166),
+                              ),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Text(
+                              'TỜ TIỀN',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: AppColors.navy,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 24,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        AppStrings.cameraPlaceholder,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    cameraPreview!,
+                    const IgnorePointer(
+                      child: CameraFrame(child: SizedBox.expand()),
+                    ),
+                  ],
+                ),
+        ),
+        const SizedBox(height: 4),
+        DenominationCard(
+          denomination: state.hasResult ? state.denomination : null,
+          isMock: state.isMock,
+          emptyMessage: emptyMessage,
+        ),
+        const SizedBox(height: 14),
+        if (state.hasResult) ...[
+          AccessibleButton(
+            key: const Key('replay_button'),
+            label: AppStrings.replay,
+            icon: Icons.volume_up_outlined,
+            onPressed: onReplayResult,
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _CameraPlaceholder extends StatelessWidget {
-  const _CameraPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: const [
-        Icon(Icons.photo_camera_outlined, color: AppColors.surface, size: 34),
-        SizedBox(height: 12),
-        Text(
-          AppStrings.cameraPlaceholder,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: AppColors.surface,
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
+          TextButton(
+            key: const Key('scan_button'),
+            style: TextButton.styleFrom(foregroundColor: Colors.white),
+            onPressed: onResetScan,
+            child: const Text(AppStrings.scanAgain),
           ),
+        ] else ...[
+          AccessibleButton(
+            key: const Key('scan_button'),
+            label: isReady ? AppStrings.startScan : AppStrings.scanAgain,
+            icon: Icons.photo_camera_outlined,
+            onPressed: isReady ? onStartScanning : onResetScan,
+          ),
+          const SizedBox(height: 10),
+          AccessibleButton(
+            key: const Key('replay_button'),
+            label: AppStrings.replay,
+            icon: Icons.volume_up_outlined,
+            primary: false,
+            onPressed: null,
+          ),
+        ],
+        const Spacer(),
+        const SizedBox(height: 12),
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          spacing: 8,
+          children: [
+            TextButton.icon(
+              onPressed: onOpenPermission,
+              style: TextButton.styleFrom(foregroundColor: Colors.white),
+              icon: const Icon(Icons.photo_camera_outlined, size: 18),
+              label: const Text(AppStrings.cameraPermissionTitle),
+            ),
+            TextButton.icon(
+              onPressed: onOpenGuide,
+              style: TextButton.styleFrom(foregroundColor: Colors.white),
+              icon: const Icon(Icons.menu_book_outlined, size: 18),
+              label: const Text(AppStrings.guideTitle),
+            ),
+          ],
         ),
-        SizedBox(height: 8),
-        Text(
-          AppStrings.cameraAlignHelp,
-          textAlign: TextAlign.center,
-          style: TextStyle(color: AppColors.surface, fontSize: 16),
-        ),
+        if (debugControls != null)
+          Theme(
+            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+            child: ExpansionTile(
+              key: const Key('demo_expander'),
+              tilePadding: EdgeInsets.zero,
+              iconColor: Colors.white70,
+              collapsedIconColor: Colors.white70,
+              title: const Text(
+                'Thử trạng thái mô phỏng',
+                style: TextStyle(color: Colors.white70, fontSize: 12),
+              ),
+              children: [debugControls!],
+            ),
+          ),
       ],
     );
   }

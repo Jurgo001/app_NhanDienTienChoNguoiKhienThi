@@ -95,7 +95,13 @@ void main() {
         ),
       ),
     );
-    expect(find.text(AppStrings.scanningRealMessage), findsOneWidget);
+    expect(
+        find.byWidgetPredicate((widget) =>
+            widget is Semantics &&
+            (widget.properties.label
+                    ?.contains(AppStrings.scanningRealMessage) ??
+                false)),
+        findsOneWidget);
     expect(find.text(AppStrings.scanningNoResultReal), findsOneWidget);
     expect(find.text(AppStrings.simulationBanner), findsNothing);
 
@@ -108,7 +114,13 @@ void main() {
         ),
       ),
     );
-    expect(find.text(AppStrings.recognizedRealMessage), findsOneWidget);
+    expect(
+        find.byWidgetPredicate((widget) =>
+            widget is Semantics &&
+            (widget.properties.label
+                    ?.contains(AppStrings.recognizedRealMessage) ??
+                false)),
+        findsOneWidget);
     expect(find.text(AppStrings.mockResultLabel), findsNothing);
   });
 

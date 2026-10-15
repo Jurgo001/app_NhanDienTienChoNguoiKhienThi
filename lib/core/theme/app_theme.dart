@@ -32,7 +32,7 @@ abstract final class AppTheme {
       textTheme: const TextTheme(
         headlineMedium: TextStyle(
           color: AppColors.navy,
-          fontSize: 28,
+          fontSize: 26,
           fontWeight: FontWeight.w800,
         ),
         titleLarge: TextStyle(

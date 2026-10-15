@@ -12,6 +12,7 @@ import 'screens/guide/guide_screen.dart';
 import 'screens/permission/camera_permission_screen.dart';
 import 'screens/recognition/recognition_screen.dart';
 import 'screens/settings/settings_screen.dart';
+import 'widgets/mobile_page.dart';
 
 class MoneyRecognitionApp extends StatefulWidget {
   const MoneyRecognitionApp({super.key});
@@ -52,6 +53,7 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp> {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
+      builder: (context, child) => MobileViewport(child: child!),
       home: Builder(
         builder: (routeContext) => ValueListenableBuilder<RecognitionUiState>(
           valueListenable: _recognition,
@@ -86,7 +88,7 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp> {
               _showNotice(context, AppStrings.resetMockNotice);
             },
             onOpenSettings: () => _openSettings(routeContext),
-            onOpenGuide: () => _openGuide(routeContext),
+            onOpenGuide: () => _openGuide(routeContext: routeContext),
             onOpenPermission: () => _openPermission(routeContext),
             debugControls: kDebugMode
                 ? RecognitionDemoControls(
@@ -111,6 +113,8 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp> {
           valueListenable: _settings,
           builder: (context, settings, _) => SettingsScreen(
             settings: settings,
+            onOpenGuide: () => _openGuide(routeContext: context),
+            onOpenPermission: () => _openPermission(context),
             onAutoReadChanged: (value) => _settings.value =
                 _settings.value.copyWith(autoReadEnabled: value),
             onVibrationChanged: (value) => _settings.value =
@@ -123,15 +127,16 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp> {
     );
   }
 
-  void _openGuide(BuildContext context) {
-    Navigator.of(context).push(
+  void _openGuide({required BuildContext routeContext}) {
+    Navigator.of(routeContext).push(
       MaterialPageRoute<void>(
         builder: (guideContext) => GuideScreen(
           onListen: () => _showNotice(
             guideContext,
             AppStrings.listenGuideMockNotice,
           ),
-          onStartRecognition: () => Navigator.of(guideContext).pop(),
+          onStartRecognition: () =>
+              Navigator.of(guideContext).popUntil((route) => route.isFirst),
         ),
       ),
     );

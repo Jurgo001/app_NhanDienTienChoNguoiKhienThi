@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_constants.dart';
 import '../../core/constants/app_strings.dart';
 import '../../widgets/accessible_button.dart';
+import '../../widgets/mobile_page.dart';
 
 class GuideScreen extends StatelessWidget {
   const GuideScreen({
@@ -11,85 +11,56 @@ class GuideScreen extends StatelessWidget {
     required this.onListen,
     required this.onStartRecognition,
   });
-
   final VoidCallback onListen;
   final VoidCallback onStartRecognition;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          tooltip: 'Quay lại',
-          onPressed: () => Navigator.of(context).pop(),
-          icon: const Icon(Icons.arrow_back),
-        ),
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Center(
-            child: ConstrainedBox(
-              constraints:
-                  const BoxConstraints(maxWidth: AppConstants.contentMaxWidth),
-              child: Padding(
-                padding: const EdgeInsets.all(AppConstants.pagePadding),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Semantics(
-                      header: true,
-                      child: Text(
-                        AppStrings.guideHeading,
-                        style: Theme.of(context).textTheme.headlineMedium,
-                      ),
-                    ),
-                    const SizedBox(height: AppConstants.sectionGap),
-                    const _GuideStep(
-                      number: 1,
-                      title: AppStrings.guideStep1Title,
-                      detail: AppStrings.guideStep1Detail,
-                    ),
-                    const _GuideStep(
-                      number: 2,
-                      title: AppStrings.guideStep2Title,
-                      detail: AppStrings.guideStep2Detail,
-                    ),
-                    const _GuideStep(
-                      number: 3,
-                      title: AppStrings.guideStep3Title,
-                      detail: AppStrings.guideStep3Detail,
-                    ),
-                    const _GuideStep(
-                      number: 4,
-                      title: AppStrings.guideStep4Title,
-                      detail: AppStrings.guideStep4Detail,
-                    ),
-                    const _GuideStep(
-                      number: 5,
-                      title: AppStrings.guideStep5Title,
-                      detail: AppStrings.guideStep5Detail,
-                    ),
-                    const SizedBox(height: AppConstants.itemGap),
-                    AccessibleButton(
-                      key: const Key('listen_guide_button'),
-                      label: AppStrings.listenGuide,
-                      icon: Icons.volume_up_outlined,
-                      primary: false,
-                      onPressed: onListen,
-                    ),
-                    const SizedBox(height: AppConstants.itemGap),
-                    AccessibleButton(
-                      label: AppStrings.returnToRecognition,
-                      icon: Icons.center_focus_strong,
-                      onPressed: onStartRecognition,
-                    ),
-                  ],
-                ),
-              ),
-            ),
+    return MobilePage(
+      backLabel: 'Về Menu',
+      children: [
+        Semantics(
+          header: true,
+          child: Text(
+            AppStrings.guideHeading,
+            style: Theme.of(context).textTheme.headlineMedium,
           ),
         ),
-      ),
+        const SizedBox(height: 26),
+        const _GuideStep(
+          number: 1,
+          title: 'Đưa tờ tiền',
+          detail: 'Đặt một tờ tiền trước camera sau.',
+        ),
+        const _GuideStep(
+          number: 2,
+          title: 'Giữ yên điện thoại',
+          detail:
+              'Ứng dụng sẽ lấy ảnh và nhận diện mệnh giá khi camera được kết nối.',
+        ),
+        const _GuideStep(
+          number: 3,
+          title: 'Nghe kết quả',
+          detail:
+              'Bấm “Đọc lại” khi cần. Chọn “Quét lại” để nhận diện tờ tiền khác.',
+        ),
+        const Spacer(),
+        const SizedBox(height: 24),
+        AccessibleButton(
+          key: const Key('listen_guide_button'),
+          label: AppStrings.listenGuide,
+          icon: Icons.volume_up_outlined,
+          primary: false,
+          onPressed: onListen,
+        ),
+        const SizedBox(height: 14),
+        AccessibleButton(
+          key: const Key('start_recognition_button'),
+          label: 'Bắt đầu nhận diện',
+          icon: Icons.photo_camera_outlined,
+          onPressed: onStartRecognition,
+        ),
+      ],
     );
   }
 }
@@ -100,7 +71,6 @@ class _GuideStep extends StatelessWidget {
     required this.title,
     required this.detail,
   });
-
   final int number;
   final String title;
   final String detail;
@@ -112,17 +82,17 @@ class _GuideStep extends StatelessWidget {
       label: 'Bước $number. $title. $detail',
       child: ExcludeSemantics(
         child: Padding(
-          padding: const EdgeInsets.only(bottom: AppConstants.sectionGap),
+          padding: const EdgeInsets.only(bottom: 28),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
+                width: 38,
+                height: 38,
                 alignment: Alignment.center,
-                padding: const EdgeInsets.all(10),
-                constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: AppColors.navy,
-                  borderRadius: BorderRadius.circular(100),
+                  shape: BoxShape.circle,
                 ),
                 child: Text(
                   '$number',
@@ -133,14 +103,21 @@ class _GuideStep extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(title, style: Theme.of(context).textTheme.titleMedium),
-                    const SizedBox(height: 4),
-                    Text(detail, style: Theme.of(context).textTheme.bodyLarge),
+                    const SizedBox(height: 6),
+                    Text(
+                      detail,
+                      style: const TextStyle(
+                        color: AppColors.muted,
+                        fontSize: 15,
+                        height: 1.5,
+                      ),
+                    ),
                   ],
                 ),
               ),

@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../core/constants/app_colors.dart';
-import '../core/constants/app_constants.dart';
 import '../core/constants/app_strings.dart';
 import '../core/models/recognition_ui_state.dart';
 
 class RecognitionStatus extends StatelessWidget {
   const RecognitionStatus({super.key, required this.state});
-
   final RecognitionUiState state;
 
   @override
@@ -19,80 +17,54 @@ class RecognitionStatus extends StatelessWidget {
       RecognitionUiStatus.unclear => AppStrings.unclearTitle,
       RecognitionUiStatus.error => AppStrings.errorTitle,
     };
-    final defaultMessage = switch (state.status) {
-      RecognitionUiStatus.ready => AppStrings.readyMessage,
-      RecognitionUiStatus.scanning => state.isMock
-          ? AppStrings.scanningMessage
-          : AppStrings.scanningRealMessage,
-      RecognitionUiStatus.recognized => state.isMock
-          ? AppStrings.recognizedMessage
-          : AppStrings.recognizedRealMessage,
-      RecognitionUiStatus.unclear => AppStrings.unclearMessage,
-      RecognitionUiStatus.error =>
-        state.isMock ? AppStrings.errorMessage : AppStrings.errorRealMessage,
-    };
-    final message = state.guidance ?? defaultMessage;
-    final icon = switch (state.status) {
-      RecognitionUiStatus.ready => Icons.check_circle_outline,
-      RecognitionUiStatus.scanning => Icons.center_focus_strong,
-      RecognitionUiStatus.recognized => Icons.verified_outlined,
-      RecognitionUiStatus.unclear => Icons.warning_amber_rounded,
-      RecognitionUiStatus.error => Icons.error_outline,
-    };
-    final background = switch (state.status) {
-      RecognitionUiStatus.ready => AppColors.paleBlue,
-      RecognitionUiStatus.scanning => AppColors.paleBlue,
-      RecognitionUiStatus.recognized => AppColors.paleGreen,
-      RecognitionUiStatus.unclear => AppColors.paleYellow,
-      RecognitionUiStatus.error => AppColors.paleRed,
-    };
-    final foreground = switch (state.status) {
-      RecognitionUiStatus.ready => AppColors.navy,
-      RecognitionUiStatus.scanning => AppColors.navy,
-      RecognitionUiStatus.recognized => AppColors.success,
-      RecognitionUiStatus.unclear => AppColors.warning,
-      RecognitionUiStatus.error => AppColors.error,
-    };
-
+    final message = state.guidance ??
+        switch (state.status) {
+          RecognitionUiStatus.ready => AppStrings.readyMessage,
+          RecognitionUiStatus.scanning => state.isMock
+              ? AppStrings.scanningMessage
+              : AppStrings.scanningRealMessage,
+          RecognitionUiStatus.recognized => state.isMock
+              ? AppStrings.recognizedMessage
+              : AppStrings.recognizedRealMessage,
+          RecognitionUiStatus.unclear => AppStrings.unclearMessage,
+          RecognitionUiStatus.error => state.isMock
+              ? AppStrings.errorMessage
+              : AppStrings.errorRealMessage,
+        };
+    final warning = state.status == RecognitionUiStatus.unclear ||
+        state.status == RecognitionUiStatus.error;
     return Semantics(
       container: true,
+      liveRegion: true,
       label: 'Trạng thái: $title. $message',
       child: ExcludeSemantics(
         child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(AppConstants.cardPadding),
+          constraints: const BoxConstraints(minHeight: 56),
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
           decoration: BoxDecoration(
-            color: background,
-            borderRadius: BorderRadius.circular(AppConstants.cornerRadius),
+            color: AppColors.navy,
+            borderRadius: BorderRadius.circular(14),
           ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Column(
             children: [
-              Icon(icon, color: foreground, size: 28),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        color: foreground,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      message,
-                      style: const TextStyle(
-                        color: AppColors.navy,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: warning ? AppColors.yellow : Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
+              if (warning) ...[
+                const SizedBox(height: 6),
+                Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                ),
+              ],
             ],
           ),
         ),

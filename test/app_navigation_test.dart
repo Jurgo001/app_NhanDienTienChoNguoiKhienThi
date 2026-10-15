@@ -68,6 +68,7 @@ void main() {
       isNull,
     );
 
+    await _tapVisible(tester, find.byKey(const Key('demo_expander')));
     await _tapVisible(tester, find.byKey(const Key('demo_recognized_button')));
     expect(find.text(AppStrings.mockDenomination), findsOneWidget);
     expect(
@@ -106,19 +107,22 @@ void main() {
     await _tapVisible(tester, find.byKey(const Key('speech_rate_fast')));
     expect(
       tester
-          .widget<SwitchListTile>(find.byKey(const Key('auto_read_switch')))
-          .value,
+          .widget<Semantics>(find.byKey(const Key('auto_read_switch')))
+          .properties
+          .toggled,
       isFalse,
     );
     expect(
       tester
-          .widget<SwitchListTile>(find.byKey(const Key('vibration_switch')))
-          .value,
+          .widget<Semantics>(find.byKey(const Key('vibration_switch')))
+          .properties
+          .toggled,
       isFalse,
     );
     expect(
       tester
-          .widget<ChoiceChip>(find.byKey(const Key('speech_rate_fast')))
+          .widget<Semantics>(find.byKey(const Key('speech_rate_fast')))
+          .properties
           .selected,
       isTrue,
     );
@@ -127,19 +131,22 @@ void main() {
     await _tapVisible(tester, find.text(AppStrings.settingsTitle));
     expect(
       tester
-          .widget<SwitchListTile>(find.byKey(const Key('auto_read_switch')))
-          .value,
+          .widget<Semantics>(find.byKey(const Key('auto_read_switch')))
+          .properties
+          .toggled,
       isFalse,
     );
     expect(
       tester
-          .widget<SwitchListTile>(find.byKey(const Key('vibration_switch')))
-          .value,
+          .widget<Semantics>(find.byKey(const Key('vibration_switch')))
+          .properties
+          .toggled,
       isFalse,
     );
     expect(
       tester
-          .widget<ChoiceChip>(find.byKey(const Key('speech_rate_fast')))
+          .widget<Semantics>(find.byKey(const Key('speech_rate_fast')))
+          .properties
           .selected,
       isTrue,
     );

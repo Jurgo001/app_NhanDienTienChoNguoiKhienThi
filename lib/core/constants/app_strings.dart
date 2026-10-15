@@ -3,10 +3,10 @@ abstract final class AppStrings {
   static const recognitionTitle = 'Nhận diện mệnh giá';
   static const simulationBanner =
       'Bản giao diện mô phỏng. Chưa kết nối camera, AI, giọng nói hoặc rung.';
-  static const cameraPlaceholder = 'Camera mô phỏng — chưa kết nối camera';
+  static const cameraPlaceholder = 'Camera mô phỏng • chưa bật';
   static const cameraAlignHelp = 'Đưa một tờ tiền vào giữa khung và giữ yên.';
   static const cameraPermissionTitle = 'Quyền camera';
-  static const settingsTitle = 'Cài đặt';
+  static const settingsTitle = 'Tùy chọn';
   static const guideTitle = 'Hướng dẫn';
   static const resultTitle = 'Mệnh giá';
   static const mockResultLabel = 'Kết quả mô phỏng';
@@ -71,7 +71,7 @@ abstract final class AppStrings {
       'Sẽ áp dụng khi thành viên 3 kết nối giọng nói.';
   static const vibration = 'Rung phản hồi';
   static const vibrationDetail = 'Sẽ áp dụng khi thành viên 3 kết nối rung.';
-  static const speechRate = 'Tốc độ giọng nói';
+  static const speechRate = 'Tốc độ giọng đọc';
   static const slow = 'Chậm';
   static const normal = 'Vừa';
   static const fast = 'Nhanh';

@@ -30,7 +30,7 @@ class AccessibleButton extends StatelessWidget {
       ),
       shape: WidgetStatePropertyAll(
         RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppConstants.cornerRadius),
+          borderRadius: BorderRadius.circular(14),
         ),
       ),
       backgroundColor: WidgetStateProperty.resolveWith((states) {
@@ -49,7 +49,7 @@ class AccessibleButton extends StatelessWidget {
         BorderSide(color: primary ? AppColors.yellow : AppColors.border),
       ),
       textStyle: const WidgetStatePropertyAll(
-        TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+        TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
       ),
     );
 

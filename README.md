@@ -1,58 +1,220 @@
 # Nhận diện tiền Việt Nam — giao diện mô phỏng
 
-Phần việc **Thành viên 1 (UI/UX và Navigation)** của ứng dụng hỗ trợ người khiếm thị nhận diện mệnh giá tiền Việt Nam. Ảnh phác thảo trong yêu cầu được dùng để định hướng màu xanh đậm, vàng và bốn luồng chính. Bố cục hiện tại là bản Material dành cho điện thoại, ưu tiên chữ rõ, nút lớn và cuộn được khi tăng cỡ chữ; đây chưa phải bản đối chiếu Figma.
+Ứng dụng gồm **4 màn hình mobile riêng** theo ảnh tham chiếu: Nhận diện, Quyền camera, Tùy chọn và Hướng dẫn. Trên Chrome máy tính, toàn bộ luồng điều hướng hiển thị trong khung điện thoại rộng 390 px, cao tối đa 844 px; trên điện thoại, ứng dụng dùng toàn bộ màn hình. Màn chính có nền xanh đậm, khung tờ tiền và nút vàng; các màn phụ dùng nền sáng.
 
 > **Trạng thái:** Camera, nhận diện AI, đọc giọng nói, rung và quyền camera hệ thống **chưa được kết nối**. Mọi kết quả trong bản này là dữ liệu demo, được gắn nhãn “Kết quả mô phỏng”. Không dùng kết quả demo để xác định tiền thật.
 
-## Cài đặt và chạy
+## Chuẩn bị trên Windows
 
-Yêu cầu Flutter **3.41 trở lên** (theo `pubspec.yaml`). Để thử trên Web cần Chrome; để chạy Android cần Android SDK và điện thoại hoặc emulator. Tại thư mục gốc repository:
+Cần Flutter **3.41 trở lên** (theo `pubspec.yaml`). Các ví dụ dùng **PowerShell**, với Flutter SDK hiện tại ở `D:\sdk_flutter\flutter`. Không cần thêm Flutter vào PATH để dùng các lệnh đầy đủ bên dưới.
 
-```powershell
-flutter doctor
-flutter pub get
-flutter devices
-flutter run 
-flutter run -d chrome
-```
+- **Chrome:** Cài Google Chrome.
+- **Android:** Cài Android Studio và các thành phần trong **Tools → SDK Manager**: Android SDK Platform theo yêu cầu của Flutter, Build-Tools, Platform-Tools, Command-line Tools, NDK/CMake khi công cụ build yêu cầu. Cài thêm Android Emulator nếu dùng máy ảo.
+- Lần lấy thư viện hoặc build đầu tiên cần mạng để tải dependencies, Gradle và các thành phần Android còn thiếu.
 
-`flutter run -d chrome` mặc định chạy bản debug và hiện **Công cụ demo** ở cuối màn hình nhận diện. Trong bản release khi chưa tích hợp TV2, nút Bắt đầu quét chỉ báo rằng camera/nhận diện chưa kết nối; ứng dụng không treo ở trạng thái quét giả. Có thể kiểm tra tĩnh và build Web/APK debug bằng:
+Mỗi khi mở terminal mới, đặt lại biến `$flutter`. Nếu máy khác dùng vị trí SDK hoặc dự án khác, thay hai đường dẫn tương ứng:
 
 ```powershell
-dart format --output=none --set-exit-if-changed lib test
-flutter analyze
-flutter test
-flutter build apk --debug
-flutter build web --debug
+Set-Location "D:\nam4 kì1\app_HoTroNguoiKhienThi"
+$flutter = "D:\sdk_flutter\flutter\bin\flutter.bat"
+
+& $flutter doctor -v
+& $flutter pub get
 ```
 
-Trên môi trường Windows của nhóm, đường dẫn chứa dấu tiếng Việt từng gây lỗi cho một số lệnh Flutter/Gradle. Nếu gặp lại, có thể tạo ổ đĩa tạm bằng `subst` rồi chạy từ đường dẫn ASCII. Ví dụ cho máy đã dùng để kiểm tra:
+Dấu `&` dùng để gọi file `.bat` từ biến trong PowerShell. Chờ từng lệnh hoàn tất rồi chạy lệnh tiếp theo. Dùng mục Chrome hoặc Android bên dưới để chọn thiết bị.
+
+## Chạy trên Chrome
+
+Mở PowerShell và chạy:
 
 ```powershell
-subst R: "D:\nam4 kì1\app_HoTroNguoiKhienThi"
-subst S: "D:\nam4 kì1\flutter\flutter"
-Set-Location R:\
-S:\bin\flutter.bat pub get
-S:\bin\flutter.bat run -d chrome
+Set-Location "D:\nam4 kì1\app_HoTroNguoiKhienThi"
+$flutter = "D:\sdk_flutter\flutter\bin\flutter.bat"
+
+& $flutter pub get
+& $flutter devices
+& $flutter run -d chrome
 ```
 
-Thay hai đường dẫn bằng vị trí thực tế trên máy khác. Khi không còn dùng, chạy `subst R: /D` và `subst S: /D`.
+Danh sách thiết bị cần có **Chrome (web)**. Flutter sẽ biên dịch và mở Chrome; giữ terminal mở trong lúc dùng ứng dụng. Khi xem trên máy tính, ứng dụng nằm trong khung mobile và chuyển qua lại giữa bốn màn hình.
 
-## Chạy thử trên Chrome
+Bản debug có mục thu gọn **Thử trạng thái mô phỏng** ở cuối màn nhận diện. Mở mục này rồi chọn **Thử thành công** để xem mệnh giá mẫu. Bản release chưa kết nối camera/AI nên nút Bắt đầu quét chỉ thông báo chức năng chưa sẵn sàng.
 
-Chạy `flutter run -d chrome` từ thư mục gốc. Flutter mở Chrome ở chế độ debug; giữ cửa sổ PowerShell để xem lỗi, nhấn `r` để hot reload hoặc `q` để dừng. Nếu lệnh gặp lỗi vì đường dẫn có dấu tiếng Việt, dùng hai ổ đĩa tạm `R:` và `S:` trong ví dụ trên rồi chạy `S:\bin\flutter.bat run -d chrome` tại `R:\`.
+## Chạy trên Android
 
-Trên Chrome, thử bốn màn hình và các nút trong **Công cụ demo** theo mục dưới. Đây chỉ là giao diện mô phỏng: không có camera, AI, âm thanh hay rung thật. Kiểm tra trên Chrome không thay cho thử TalkBack trên Android.
+### 1. Kiểm tra công cụ Android
 
-Để chạy Android về sau, kết nối điện thoại hoặc mở emulator, kiểm tra ID bằng `flutter devices`, rồi chạy `flutter run -d ID_THIET_BI`.
+Mở PowerShell:
+
+```powershell
+Set-Location "D:\nam4 kì1\app_HoTroNguoiKhienThi"
+$flutter = "D:\sdk_flutter\flutter\bin\flutter.bat"
+
+& $flutter doctor -v
+```
+
+Xử lý các lỗi trong mục **Android toolchain** trước khi chạy. Nếu chưa chấp nhận giấy phép Android SDK, dùng lệnh sau rồi đọc và chấp nhận các giấy phép cần thiết:
+
+```powershell
+& $flutter doctor --android-licenses
+& $flutter doctor -v
+```
+
+Sau đó chọn **điện thoại thật** hoặc **máy ảo Android**.
+
+### 2a. Điện thoại Android qua USB
+
+1. Trên điện thoại, bật **Tùy chọn nhà phát triển → Gỡ lỗi USB (USB debugging)**.
+2. Kết nối bằng cáp USB có truyền dữ liệu, mở khóa điện thoại và chấp nhận hộp thoại cho phép gỡ lỗi từ máy tính.
+3. Trên Windows, cài USB driver của hãng điện thoại nếu cần.
+4. Chạy các lệnh sau. Thay `ID_THIET_BI` bằng ID của điện thoại Android trong kết quả `devices`, không chọn dòng Chrome hoặc Windows.
+
+```powershell
+Set-Location "D:\nam4 kì1\app_HoTroNguoiKhienThi"
+$flutter = "D:\sdk_flutter\flutter\bin\flutter.bat"
+
+& $flutter pub get
+& $flutter devices
+
+$deviceId = "ID_THIET_BI"
+& $flutter run -d $deviceId
+```
+
+Flutter sẽ build, cài và mở ứng dụng trên điện thoại. Sau khi kết nối thành công, bật **TalkBack** trên điện thoại để kiểm tra nhãn đọc, thứ tự vuốt và thao tác kích hoạt nút.
+
+### 2b. Máy ảo Android (Emulator)
+
+Trong Android Studio, mở **Tools → Device Manager → Create Virtual Device**, chọn mẫu điện thoại, tải system image phù hợp và hoàn tất tạo máy ảo. Nhấn nút **Run** của máy ảo, đợi Android khởi động xong.
+
+Khi máy ảo đã mở, chạy:
+
+```powershell
+Set-Location "D:\nam4 kì1\app_HoTroNguoiKhienThi"
+$flutter = "D:\sdk_flutter\flutter\bin\flutter.bat"
+
+& $flutter pub get
+& $flutter devices
+
+$deviceId = "ID_THIET_BI"
+& $flutter run -d $deviceId
+```
+
+Thay `ID_THIET_BI` bằng ID của máy ảo từ `devices`, thường có dạng `emulator-5554`; dùng ID thực tế trên máy của bạn.
+
+Nếu muốn mở một máy ảo đã tạo từ terminal, liệt kê và chọn ID như sau:
+
+```powershell
+& $flutter emulators
+
+$emulatorId = "ID_MAY_AO"
+& $flutter emulators --launch $emulatorId
+```
+
+Thay `ID_MAY_AO` bằng ID từ `emulators`. Đợi máy ảo khởi động rồi chạy lại `devices` và `run -d` như trên. **ID để khởi động máy ảo** và **ID thiết bị để chạy ứng dụng** có thể khác nhau.
+
+### 3. Xuất APK debug để cài thử
+
+Sau khi Android toolchain đã sẵn sàng:
+
+```powershell
+Set-Location "D:\nam4 kì1\app_HoTroNguoiKhienThi"
+$flutter = "D:\sdk_flutter\flutter\bin\flutter.bat"
+
+& $flutter pub get
+& $flutter build apk --debug
+```
+
+APK tạo tại `build\app\outputs\flutter-apk\app-debug.apk`. Đây là bản debug để kiểm tra, chưa phải bản phát hành.
+
+## Cập nhật giao diện và dừng chạy
+
+Khi terminal vẫn đang chạy `run`, bấm phím trực tiếp vào terminal:
+
+- `r`: hot reload sau khi sửa giao diện.
+- `R` (Shift + R): hot restart, khởi động lại ứng dụng và đặt lại state trong bộ nhớ.
+- `q`: kết thúc phiên chạy Flutter.
+- **Ctrl + C**: ngắt lệnh nếu bị kẹt.
+
+Để chạy lại, gọi `& $flutter run -d chrome` hoặc `& $flutter run -d $deviceId`. Khi đổi từ Chrome sang Android, dừng phiên cũ trước rồi chọn thiết bị mới.
+
+## Xử lý lỗi thường gặp
+
+### Flutter không tìm thấy hoặc vẫn dùng SDK cũ
+
+Dùng `$flutter = "D:\sdk_flutter\flutter\bin\flutter.bat"` trong terminal hiện tại. Nếu VS Code còn trỏ SDK cũ, chọn **Flutter: Change SDK** trong Command Palette rồi chọn `D:\sdk_flutter\flutter`. Thư mục SDK là thư mục chứa `bin`.
+
+### Lỗi shader: impellerc, runtime_effect.glsl, ink_sparkle.frag
+
+SDK từng nằm trong đường dẫn có dấu và gây lỗi biên dịch shader. Dùng SDK mới không dấu tại `D:\sdk_flutter\flutter`, rồi chạy lại từ thư mục dự án:
+
+```powershell
+$flutter = "D:\sdk_flutter\flutter\bin\flutter.bat"
+
+& $flutter clean
+& $flutter pub get
+& $flutter run -d chrome
+```
+
+`clean` xóa file build và cấu hình sinh tự động; không xóa code trong `lib/`. Không cần chạy `clean` mỗi lần khởi động ứng dụng.
+
+Nếu Gradle báo đường dẫn dự án chứa ký tự không ASCII khi build Android, đóng phiên chạy rồi chuyển dự án sang đường dẫn không dấu, không khoảng trắng, ví dụ `D:\projects\app_HoTroNguoiKhienThi`. Mở lại dự án ở vị trí mới, thay dòng `Set-Location` tương ứng và chạy lại `pub get`.
+
+### Không thấy Chrome trong devices
+
+Kiểm tra Chrome đã được cài, bật hỗ trợ web rồi kiểm tra lại:
+
+```powershell
+& $flutter config --enable-web
+& $flutter devices
+```
+
+Nếu Flutter vẫn báo không tìm thấy file Chrome, đặt đường dẫn thực tế của Chrome cho terminal hiện tại. Ví dụ khi Chrome được cài ở vị trí sau:
+
+```powershell
+$env:CHROME_EXECUTABLE = "C:\Program Files\Google\Chrome\Application\chrome.exe"
+& $flutter run -d chrome
+```
+
+### Không thấy thiết bị Android hoặc trạng thái unauthorized
+
+Kiểm tra điện thoại đã mở khóa, USB debugging đã bật, cáp có truyền dữ liệu và đã chấp nhận hộp thoại gỡ lỗi. Với emulator, đợi máy ảo khởi động xong. Chạy lại `& $flutter devices` và xử lý các lỗi Android mà `doctor -v` báo.
+
+### Waiting for another flutter command to release the startup lock
+
+Kiểm tra các terminal đang chạy Flutter. Dừng lệnh cũ bị kẹt bằng **Ctrl + C**, hoặc chờ lệnh đang tải/build hoàn tất, rồi thử lại. Không chạy nhiều lệnh khởi động Flutter cùng lúc.
+
+Thông báo `packages have newer versions incompatible with dependency constraints` sau `Got dependencies!` chỉ cho biết có bản dependency mới; không phải lỗi biên dịch.
+
+Hướng dẫn chính thức: [thiết lập Chrome/Web](https://docs.flutter.dev/platform-integration/web/setup), [chạy Flutter Web](https://docs.flutter.dev/platform-integration/web/building), [thiết lập Android](https://docs.flutter.dev/platform-integration/android/setup), [chọn đường dẫn SDK](https://docs.flutter.dev/install/manual).
 
 ## Cách thử bốn màn hình
 
-1. **Nhận diện (màn hình chính):** Ban đầu hiển thị “Sẵn sàng”, placeholder “Camera mô phỏng — chưa kết nối camera”, khung căn chỉnh và “Chưa có kết quả”. Nút **Đọc lại** bị vô hiệu hóa. Nhấn **Bắt đầu quét** để vào trạng thái “Đang quét”.
-2. **Các trạng thái demo:** Cuộn đến **Công cụ demo (chỉ bản debug)**. Chọn **Thử thành công** để thấy “100.000 đồng” có nhãn kết quả mô phỏng và bật **Đọc lại**. Chọn **Thử chưa rõ** hoặc **Thử lỗi** để xem cảnh báo bằng chữ. Nhấn **Quét lại** để xóa mệnh giá cũ, bắt đầu phiên quét mô phỏng mới. **Đọc lại** chỉ hiện thông báo mô phỏng, không phát tiếng.
-3. **Quyền camera:** Từ màn hình chính chọn **Quyền camera**. **Cấp quyền camera** chỉ giả lập đồng ý và trở về màn hình chính; không xuất hiện hộp thoại hệ thống. **Từ chối mô phỏng** hiển thị hướng dẫn; chọn **Tiếp tục bản mô phỏng** hoặc nút quay lại để rời màn hình.
-4. **Cài đặt:** Từ màn hình chính chọn **Cài đặt**. Đổi **Tự động đọc kết quả**, **Rung phản hồi** và tốc độ **Chậm / Vừa / Nhanh**. Quay lại rồi mở lại để kiểm tra giá trị vẫn giữ trong phiên chạy. Giá trị sẽ về mặc định khi đóng ứng dụng.
-5. **Hướng dẫn:** Từ màn hình chính chọn **Hướng dẫn** để đọc năm bước sử dụng. **Nghe hướng dẫn** thông báo chức năng âm thanh sẽ được TV3 kết nối. **Về màn hình nhận diện** hoặc nút quay lại đều trở về bình thường.
+1. **Nhận diện:** Màn chính nền xanh đậm, nút Tùy chọn ở trên, khung căn tờ tiền và vùng kết quả. Ban đầu là “Sẵn sàng”, chưa có mệnh giá; nút Đọc lại chỉ bật khi có kết quả. Nhấn Bắt đầu quét để thử phiên mô phỏng.
+2. **Quyền camera:** Chọn Quyền camera ở cuối màn chính hoặc Camera và quyền truy cập trong Tùy chọn. Thử Trong khi dùng ứng dụng, Chỉ lần này hoặc Không cho phép. Đây là giao diện mô phỏng, chưa xin quyền hệ thống.
+3. **Tùy chọn:** Chọn Tùy chọn ở đầu màn chính. Thay đổi rung, tốc độ giọng đọc, tự động đọc kết quả. Giá trị được giữ khi chuyển màn trong cùng phiên. Nghe hướng dẫn mở màn Hướng dẫn; Về nhận diện quay lại màn chính.
+4. **Hướng dẫn:** Có ba bước sử dụng và hai nút Nghe hướng dẫn, Bắt đầu nhận diện. Về Menu trở lại màn vừa mở Hướng dẫn; Bắt đầu nhận diện đưa về màn chính kể cả khi đi từ Tùy chọn.
+
+Để xem trạng thái có mệnh giá như ảnh tham chiếu, mở **Thử trạng thái mô phỏng** ở cuối màn chính rồi chọn **Thử thành công**. Kết quả luôn ghi nhãn mô phỏng. Có thể thử Chưa rõ, Lỗi hoặc Quét lại để kiểm tra xóa kết quả cũ.
+
+## Kiểm tra thay đổi giao diện
+
+Đã chạy `dart analyze lib test` không có lỗi và `flutter test --no-pub` đạt **16/16**. Kiểm thử bao gồm điều hướng bốn màn, quay từ Hướng dẫn về Menu hoặc màn chính, quyền camera mô phỏng, khung mobile trên desktop, màn nhỏ, chữ phóng gấp đôi và chạm sát cả bốn cạnh của từng vùng tốc độ. Ba vùng Chậm/Vừa/Nhanh có chiều rộng bằng nhau, cao tối thiểu 64 px, kèm nhãn và trạng thái chọn cho trình đọc màn hình.
+
+Có thể chạy lại kiểm tra và build bằng PowerShell tại thư mục dự án:
+
+```powershell
+$flutter = "D:\sdk_flutter\flutter\bin\flutter.bat"
+$dart = "D:\sdk_flutter\flutter\bin\cache\dart-sdk\bin\dart.exe"
+
+& $dart format --output=none --set-exit-if-changed lib test
+& $flutter analyze
+& $flutter test
+& $flutter build web --debug
+& $flutter build apk --debug
+```
+
+Lệnh build APK cần Android toolchain đã được cấu hình. Kiểm thử widget không thay thế kiểm tra thực tế trên Chrome, Android hoặc TalkBack.
 
 ## Phần UI đã hoàn thành và giới hạn mô phỏng
 
@@ -63,7 +225,7 @@ Trên Chrome, thử bốn màn hình và các nút trong **Công cụ demo** the
 | Đọc lại | Chỉ bật khi có kết quả, hiện thông báo mock | TTS thật |
 | Quyền camera | Giải thích mục đích, đồng ý/từ chối mô phỏng, lối thoát khi từ chối | Xin quyền Android thật hoặc mở cài đặt hệ thống |
 | Cài đặt | Công tắc tự đọc/rung và tốc độ giọng nói, giữ trong bộ nhớ khi chuyển màn | Kết nối TTS/rung, lưu xuống thiết bị |
-| Hướng dẫn | Năm bước ngắn, nút nghe và điều hướng | Phát âm thanh hướng dẫn |
+| Hướng dẫn | Ba bước ngắn, nút nghe và điều hướng | Phát âm thanh hướng dẫn |
 
 Ảnh phác thảo cho thấy mệnh giá ngay khi mở ứng dụng, phiên tự bắt đầu sau 15 giây và cài đặt được lưu tự động. Bản UI này **không hiển thị mệnh giá giả trước khi chọn demo**, **không chạy bộ đếm thời gian** và **không lưu cài đặt sau khi đóng app**; các quy tắc phiên và lưu trữ cần được nhóm thống nhất trước khi tích hợp.
 
@@ -72,7 +234,7 @@ Trên Chrome, thử bốn màn hình và các nút trong **Công cụ demo** the
 - Khởi chạy, theme, chuỗi và hằng số UI: `lib/main.dart`, `lib/app.dart`, `lib/core/constants/`, `lib/core/theme/`.
 - Hợp đồng trình bày tạm: `lib/core/models/recognition_ui_state.dart`, `lib/core/models/app_settings.dart`.
 - Bốn màn hình: `lib/screens/recognition/`, `lib/screens/permission/`, `lib/screens/settings/`, `lib/screens/guide/`.
-- Widget dùng chung: `lib/widgets/accessible_button.dart`, `camera_frame.dart`, `denomination_card.dart`, `recognition_status.dart`.
+- Widget dùng chung: `lib/widgets/accessible_button.dart`, `camera_frame.dart`, `denomination_card.dart`, `recognition_status.dart`, `mobile_page.dart`.
 - Dữ liệu và điều khiển demo chỉ ở debug: `lib/debug/`.
 - Widget tests: `test/`. Cấu hình Web: `web/` và `.metadata`. Cấu hình Android tối thiểu: `android/` (package ID tạm `com.example.app_ho_tro_nguoi_khiem_thi`; đổi theo tên miền của nhóm trước khi phát hành).
 
@@ -89,13 +251,9 @@ Trên Chrome, thử bốn màn hình và các nút trong **Công cụ demo** the
 
 ## Kiểm tra và checklist bàn giao
 
-Đã xác nhận trong môi trường phát triển: `flutter pub get`, format `lib`/`test`, `dart analyze lib test` (không có lỗi), `flutter analyze --no-pub`, `flutter test` **9/9 đạt**, và `flutter build apk --debug` cùng `flutter build web --debug` thành công với Flutter 3.47.7 (các lệnh Flutter cần `subst` vì đường dẫn Unicode). Năm test trong `test/recognition_widgets_test.dart` kiểm tra nút Đọc lại, nhãn Semantics của kết quả demo, câu trạng thái cho dữ liệu thật, cảnh báo chưa rõ/lỗi và màn hình 320 × 568 với chữ gấp đôi. Bốn test trong `test/app_navigation_test.dart` kiểm tra điều hướng, quyền mô phỏng, xóa kết quả khi quét lại, giữ cài đặt trong phiên và bố cục màn phụ khi tăng cỡ chữ.
+Kiểm tra tự động gần nhất: phân tích code không có lỗi, **16/16 widget test đạt**. Các test nằm trong `test/recognition_widgets_test.dart`, `test/app_navigation_test.dart`, `test/mobile_flow_test.dart` và `test/speech_rate_touch_test.dart`.
 
-Bản Web đã khởi động trong Chrome và kết nối Flutter debug service. Lần thử `flutter test --platform chrome` bị kẹt ở bước nạp test, nên chưa xem là kiểm thử trình duyệt đạt; 9 widget test thông thường đã đạt.
-
-**Chưa chạy ứng dụng trên thiết bị/emulator Android; chưa kiểm tra TalkBack thực tế trên thiết bị.** Trước khi bàn giao tích hợp, kiểm tra thủ công:
-
-`flutter doctor -v` trên máy hiện tại còn cảnh báo Flutter/Dart chưa nằm trong `PATH` và một số giấy phép Android chưa được chấp nhận. Android SDK đã có và APK debug vẫn build thành công. `adb devices` không thấy điện thoại, danh sách AVD trống; cần kết nối thiết bị hoặc tạo emulator để chạy thử UI trên Android.
+**Chưa xác nhận chạy ứng dụng trên thiết bị/emulator Android và TalkBack thực tế.** Thực hiện các bước Android ở trên rồi hoàn tất checklist sau. Dùng `doctor -v` và `devices` để kiểm tra trạng thái máy hiện tại; thông tin giấy phép hoặc thiết bị có thể thay đổi.
 
 - [ ] Mở cả bốn màn hình, quay lại bằng nút trong ứng dụng và nút Back của Android; không crash.
 - [ ] Ở màn hình chính, Đọc lại bị vô hiệu hóa khi chưa có kết quả; bật sau “Thử thành công”; Quét lại xóa kết quả ngay.
