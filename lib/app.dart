@@ -1,17 +1,24 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
+import 'controllers/recognition_controller.dart';
+import 'controllers/settings_controller.dart';
 import 'core/constants/app_strings.dart';
-import 'core/models/app_settings.dart';
-import 'core/models/recognition_ui_state.dart';
+
 import 'core/theme/app_theme.dart';
-import 'debug/mock_recognition_scenarios.dart';
+
 import 'debug/recognition_demo_controls.dart';
+import 'models/denomination.dart';
 import 'screens/guide/guide_screen.dart';
 import 'screens/permission/camera_permission_screen.dart';
 import 'screens/recognition/recognition_screen.dart';
 import 'screens/settings/settings_screen.dart';
+import 'services/haptic_service.dart';
+import 'services/settings_service.dart';
+import 'services/speech_service.dart';
 import 'widgets/mobile_page.dart';
 
 class MoneyRecognitionApp extends StatefulWidget {
@@ -22,21 +29,75 @@ class MoneyRecognitionApp extends StatefulWidget {
 }
 
 class _MoneyRecognitionAppState extends State<MoneyRecognitionApp> {
-  final ValueNotifier<RecognitionUiState> _recognition = ValueNotifier(
-    const RecognitionUiState(status: RecognitionUiStatus.ready),
-  );
-  final ValueNotifier<AppSettings> _settings =
-      ValueNotifier(const AppSettings());
+  // Các service do TV3 xây dựng.
+  final SpeechService _speechService = SpeechService();
+  final HapticService _hapticService = HapticService();
+  final SettingsService _settingsService = SettingsService();
+
+  late final SettingsController _settingsController;
+  late final RecognitionController _recognitionController;
+
+  // Trạng thái màn hình quyền camera mô phỏng của TV1.
   final ValueNotifier<MockPermissionDecision> _permissionDecision =
-      ValueNotifier(
-    MockPermissionDecision.undecided,
-  );
+      ValueNotifier(MockPermissionDecision.undecided);
+
+  bool _initialized = false;
+  String? _initializationError;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Khởi tạo controller cài đặt.
+    _settingsController = SettingsController(_settingsService);
+
+    // Khởi tạo controller nhận diện.
+    _recognitionController = RecognitionController(
+      speechService: _speechService,
+      hapticService: _hapticService,
+      getSettings: () => _settingsController.settings,
+    );
+
+    // Tải cài đặt và khởi tạo giọng nói.
+    _initializeServices();
+  }
+
+  Future<void> _initializeServices() async {
+    try {
+      await _settingsController.initialize();
+      await _speechService.initialize();
+
+      if (!mounted) return;
+
+      setState(() {
+        _initialized = true;
+      });
+    } catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        _initializationError = error.toString();
+      });
+    }
+  }
+
+  // Xử lý Future để lỗi không làm mất phản hồi của UI.
+  void _runSafely(Future<void> future) {
+    unawaited(
+      future.catchError((Object error, StackTrace stackTrace) {
+        debugPrint('TV3 operation error: $error');
+      }),
+    );
+  }
 
   @override
   void dispose() {
-    _recognition.dispose();
-    _settings.dispose();
+    _recognitionController.dispose();
+    _settingsController.dispose();
     _permissionDecision.dispose();
+
+    unawaited(_speechService.stop());
+
     super.dispose();
   }
 
@@ -54,79 +115,146 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp> {
         GlobalCupertinoLocalizations.delegate,
       ],
       builder: (context, child) => MobileViewport(child: child!),
-      home: Builder(
-        builder: (routeContext) => ValueListenableBuilder<RecognitionUiState>(
-          valueListenable: _recognition,
-          builder: (context, state, _) => RecognitionScreen(
-            state: state,
-            onStartScanning: () {
-              if (!kDebugMode) {
-                _showNotice(context, AppStrings.scanUnavailableNotice);
-                return;
-              }
-              _recognition.value = const RecognitionUiState(
-                status: RecognitionUiStatus.scanning,
-              );
-              _showNotice(context, AppStrings.scanMockNotice);
-            },
-            onReplayResult: () {
-              if (_recognition.value.hasResult) {
-                _showNotice(context, AppStrings.replayMockNotice);
-              }
-            },
-            onResetScan: () {
-              if (!kDebugMode) {
-                _recognition.value = const RecognitionUiState(
-                  status: RecognitionUiStatus.ready,
-                );
-                _showNotice(context, AppStrings.scanUnavailableNotice);
-                return;
-              }
-              _recognition.value = const RecognitionUiState(
-                status: RecognitionUiStatus.scanning,
-              );
-              _showNotice(context, AppStrings.resetMockNotice);
-            },
-            onOpenSettings: () => _openSettings(routeContext),
-            onOpenGuide: () => _openGuide(routeContext: routeContext),
-            onOpenPermission: () => _openPermission(routeContext),
-            debugControls: kDebugMode
-                ? RecognitionDemoControls(
-                    onRecognized: () => _recognition.value =
-                        MockRecognitionScenarios.recognized,
-                    onUnclear: () =>
-                        _recognition.value = MockRecognitionScenarios.unclear,
-                    onError: () =>
-                        _recognition.value = MockRecognitionScenarios.error,
-                  )
-                : null,
-          ),
-        ),
-      ),
+      home: !_initialized
+          ? Scaffold(
+              body: Center(
+                child: _initializationError == null
+                    ? const CircularProgressIndicator()
+                    : Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Text(
+                          'Không thể khởi tạo ứng dụng:\n'
+                          '$_initializationError',
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+              ),
+            )
+          : Builder(
+              builder: (routeContext) => AnimatedBuilder(
+                animation: _recognitionController,
+                builder: (context, _) {
+                  final state = _recognitionController.state;
+
+                  return RecognitionScreen(
+                    state: state,
+
+                    // Bắt đầu quét mô phỏng.
+                    onStartScanning: () {
+                      if (!kDebugMode) {
+                        _showNotice(
+                          context,
+                          AppStrings.scanUnavailableNotice,
+                        );
+                        return;
+                      }
+
+                      _recognitionController.startScanning();
+
+                      _showNotice(
+                        context,
+                        AppStrings.scanMockNotice,
+                      );
+                    },
+
+                    // Đọc lại kết quả hiện tại bằng TTS thật.
+                    onReplayResult: () {
+                      _runSafely(
+                        _recognitionController.replayResult(),
+                      );
+                    },
+
+                    // Xóa kết quả và bắt đầu phiên mới.
+                    onResetScan: () {
+                      if (!kDebugMode) {
+                        _showNotice(
+                          context,
+                          AppStrings.scanUnavailableNotice,
+                        );
+                        return;
+                      }
+
+                      _runSafely(
+                        _recognitionController.resetScan(),
+                      );
+
+                      _showNotice(
+                        context,
+                        AppStrings.resetMockNotice,
+                      );
+                    },
+
+                    onOpenSettings: () => _openSettings(routeContext),
+
+                    onOpenGuide: () => _openGuide(routeContext: routeContext),
+
+                    onOpenPermission: () => _openPermission(routeContext),
+
+                    // Chỉ bật mô phỏng khi chạy Debug.
+                    debugControls: kDebugMode
+                        ? RecognitionDemoControls(
+                            onRecognized: () {
+                              // Dữ liệu mô phỏng để test TV3.
+                              _recognitionController.simulateRecognition(
+                                Denomination.vnd100000,
+                              );
+                            },
+                            onUnclear: () {
+                              _recognitionController.showUnclear(
+                                isMock: true,
+                              );
+                            },
+                            onError: () {
+                              _recognitionController.showError(
+                                'Lỗi nhận diện mô phỏng',
+                                isMock: true,
+                              );
+                            },
+                          )
+                        : null,
+                  );
+                },
+              ),
+            ),
     );
   }
 
+  // Màn hình cài đặt của TV1 kết nối SettingsController.
   void _openSettings(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => ValueListenableBuilder<AppSettings>(
-          valueListenable: _settings,
-          builder: (context, settings, _) => SettingsScreen(
-            settings: settings,
-            onOpenGuide: () => _openGuide(routeContext: context),
-            onOpenPermission: () => _openPermission(context),
-            onAutoReadChanged: (value) => _settings.value =
-                _settings.value.copyWith(autoReadEnabled: value),
-            onVibrationChanged: (value) => _settings.value =
-                _settings.value.copyWith(vibrationEnabled: value),
-            onSpeechRateChanged: (value) =>
-                _settings.value = _settings.value.copyWith(speechRate: value),
-          ),
+        builder: (_) => AnimatedBuilder(
+          animation: _settingsController,
+          builder: (context, _) {
+            final settings = _settingsController.settings;
+
+            return SettingsScreen(
+              settings: settings,
+              onOpenGuide: () => _openGuide(routeContext: context),
+              onOpenPermission: () => _openPermission(context),
+              onAutoReadChanged: (value) {
+                _runSafely(
+                  _settingsController.setAutoRead(value),
+                );
+              },
+              onVibrationChanged: (value) {
+                _runSafely(
+                  _settingsController.setVibration(value),
+                );
+              },
+              onSpeechRateChanged: (value) {
+                _runSafely(
+                  _settingsController.setSpeechRate(value),
+                );
+              },
+            );
+          },
         ),
       ),
     );
   }
 
+  // Giữ nguyên màn hình hướng dẫn của TV1.
   void _openGuide({required BuildContext routeContext}) {
     Navigator.of(routeContext).push(
       MaterialPageRoute<void>(
@@ -142,8 +270,10 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp> {
     );
   }
 
+  // Giữ nguyên luồng quyền camera mô phỏng của TV1.
   void _openPermission(BuildContext context) {
     _permissionDecision.value = MockPermissionDecision.undecided;
+
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (permissionContext) =>
@@ -153,8 +283,13 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp> {
             decision: decision,
             onApproveMock: () {
               _permissionDecision.value = MockPermissionDecision.approved;
+
               Navigator.of(permissionContext).pop();
-              _showNotice(context, AppStrings.permissionApprovedMockNotice);
+
+              _showNotice(
+                context,
+                AppStrings.permissionApprovedMockNotice,
+              );
             },
             onDenyMock: () {
               _permissionDecision.value = MockPermissionDecision.denied;
@@ -168,7 +303,11 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp> {
 
   void _showNotice(BuildContext context, String message) {
     final messenger = ScaffoldMessenger.of(context);
+
     messenger.hideCurrentSnackBar();
-    messenger.showSnackBar(SnackBar(content: Text(message)));
+
+    messenger.showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 }

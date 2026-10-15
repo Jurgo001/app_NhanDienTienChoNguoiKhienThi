@@ -22,3 +22,4 @@ android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
 .vscode/
 .DS_Store
 Thumbs.db
+/android/.kotlin/
