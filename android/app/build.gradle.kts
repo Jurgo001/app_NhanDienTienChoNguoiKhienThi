@@ -20,10 +20,15 @@ android {
 
     defaultConfig {
         applicationId = "com.example.app_ho_tro_nguoi_khiem_thi"
-        minSdk = flutter.minSdkVersion
+        minSdk = maxOf(flutter.minSdkVersion, 24)
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+    }
+
+    // Không nén file model TFLite khi build APK
+    androidResources {
+        noCompress += listOf("tflite", "lite")
     }
 
     buildTypes {

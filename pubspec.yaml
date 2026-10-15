@@ -4,14 +4,18 @@ publish_to: none
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.3.0 <4.0.0'
-  flutter: '>=3.41.0'
+  sdk: ">=3.3.0 <4.0.0"
+  flutter: ">=3.41.0"
 
 dependencies:
   flutter:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
+  camera: ^0.11.0+2
+  tflite_flutter: ^0.11.0
+  image: ^4.2.0
+  permission_handler: ^11.3.1
 
 dev_dependencies:
   flutter_test:
@@ -19,3 +23,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+assets:
+  - assets/models/
