@@ -17,7 +17,7 @@ class DetectorTestScreen extends StatefulWidget {
 
 class _DetectorTestScreenState extends State<DetectorTestScreen>
     with WidgetsBindingObserver {
-  final CameraService _cameraService = CameraService(minFrameIntervalMs: 120);
+  final CameraService _cameraService = CameraService(minFrameIntervalMs: 300);
   late final MoneyDetector _realDetector;
   late final MockMoneyDetector _mockDetector;
 

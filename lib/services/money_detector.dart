@@ -1,3 +1,4 @@
+import 'dart:isolate';
 import 'dart:typed_data';
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
@@ -10,21 +11,70 @@ import 'package:app_ho_tro_nguoi_khiem_thi/services/image_quality_service.dart';
 import 'package:app_ho_tro_nguoi_khiem_thi/utils/image_converter.dart';
 import 'package:app_ho_tro_nguoi_khiem_thi/utils/yolo_decoder.dart';
 
-/// Dịch vụ nhận diện tiền mặt thực tế bằng TensorFlow Lite (YOLOv8 Nano).
-class MoneyDetector implements DetectorService {
-  /// Đường dẫn file model trong pubspec.yaml (Ưu tiên bản Float32 ổn định).
-  final String modelAssetPath;
-
-  /// Ngưỡng tin cậy tối thiểu để công nhận kết quả hợp lệ (Mặc định: 0.78).
-  final double confidenceThreshold;
-
-  /// Ngưỡng tin cậy sàn để phát hiện tờ tiền bị mờ/rung (Mặc định: 0.40).
+/// Gói dữ liệu thô đã tách khỏi CameraImage để truyền an toàn sang Isolate ngầm.
+class _IsolateFramePayload {
+  final int interpreterAddress;
+  final int width;
+  final int height;
+  final int sensorOrientation;
+  final int targetSize;
+  final bool isChannelsFirst;
+  final bool isYuv420;
+  final Uint8List yBytes;
+  final Uint8List? uBytes;
+  final Uint8List? vBytes;
+  final int yRowStride;
+  final int yPixelStride;
+  final int uvRowStride;
+  final int uvPixelStride;
+  final List<int> outputShape;
+  final bool isFloatInput;
+  final bool isFloatOutput;
   final double lowConfidenceFloor;
-
-  /// Ngưỡng lọc trùng lặp NMS IoU (Mặc định: 0.45).
   final double iouThreshold;
 
-  /// Dịch vụ kiểm tra chất lượng ảnh (sáng/tối, gần/xa).
+  const _IsolateFramePayload({
+    required this.interpreterAddress,
+    required this.width,
+    required this.height,
+    required this.sensorOrientation,
+    required this.targetSize,
+    required this.isChannelsFirst,
+    required this.isYuv420,
+    required this.yBytes,
+    this.uBytes,
+    this.vBytes,
+    required this.yRowStride,
+    required this.yPixelStride,
+    required this.uvRowStride,
+    required this.uvPixelStride,
+    required this.outputShape,
+    required this.isFloatInput,
+    required this.isFloatOutput,
+    required this.lowConfidenceFloor,
+    required this.iouThreshold,
+  });
+}
+
+/// Kết quả trả về từ Isolate ngầm về Main Thread.
+class _IsolateInferenceOutput {
+  final List<BoundingBox> boxes;
+  final double meanBrightness;
+  final double contrastStdDev;
+
+  const _IsolateInferenceOutput({
+    required this.boxes,
+    required this.meanBrightness,
+    required this.contrastStdDev,
+  });
+}
+
+/// Dịch vụ nhận diện tiền mặt thực tế bằng TensorFlow Lite chạy trên Isolate ngầm.
+class MoneyDetector implements DetectorService {
+  final String modelAssetPath;
+  final double confidenceThreshold;
+  final double lowConfidenceFloor;
+  final double iouThreshold;
   final ImageQualityService qualityService;
 
   Interpreter? _interpreter;
@@ -60,7 +110,7 @@ class MoneyDetector implements DetectorService {
     if (!isInitialized) {
       return 'Chưa khởi tạo (${_lastInitError ?? "Chưa nạp model"})';
     }
-    return 'TFLite: $modelAssetPath | In: $_inputShape ($_inputType) | Out: $_outputShape';
+    return 'TFLite (Isolate): $modelAssetPath | In: $_inputShape | Out: $_outputShape';
   }
 
   @override
@@ -85,7 +135,6 @@ class MoneyDetector implements DetectorService {
       _inputType = inputTensor.type;
       _outputType = outputTensor.type;
 
-      // Tự động nhận diện layout NCHW [1, 3, 416, 416] hay NHWC [1, 416, 416, 3]
       if (_inputShape.length == 4) {
         if (_inputShape[1] == 3) {
           _isInputChannelsFirst = true;
@@ -117,7 +166,6 @@ class MoneyDetector implements DetectorService {
       );
     }
 
-    // Khóa van (Frame Throttling): bỏ qua nếu frame trước chưa chạy xong
     if (_isBusy) {
       return DetectionResult(
         status: DetectionStatus.skippedBusy,
@@ -131,78 +179,62 @@ class MoneyDetector implements DetectorService {
     final stopwatch = Stopwatch()..start();
 
     try {
-      // 1. Tiền xử lý ảnh CameraImage -> Float32List [416x416]
-      final PreprocessedFrame preprocessed = ImageConverter.convertCameraImage(
-        cameraImage: cameraImage,
+      // Sao chép nhanh mảng byte thô (< 0.5ms) để gửi sang Isolate an toàn
+      final bool isYuv420 =
+          cameraImage.format.group == ImageFormatGroup.yuv420 ||
+          cameraImage.planes.length >= 3;
+
+      final payload = _IsolateFramePayload(
+        interpreterAddress: _interpreter!.address,
+        width: cameraImage.width,
+        height: cameraImage.height,
         sensorOrientation: sensorOrientation,
         targetSize: _inputSize,
         isChannelsFirst: _isInputChannelsFirst,
-        useLetterbox: false, // Khớp với cấu hình Stretch to 416x416 trên Roboflow
-      );
-
-      // 2. Cấp phát bộ đệm đầu ra phẳng theo đúng số phần tử của Output Tensor
-      final int numOutputElements = _outputShape.fold<int>(
-        1,
-        (prev, elem) => prev * elem,
-      );
-      final Float32List outputFloatBuffer = Float32List(numOutputElements);
-
-      // 3. Chạy suy luận trực tiếp qua ByteBuffer và invoke()
-      final inputTensor = _interpreter!.getInputTensor(0);
-      final outputTensor = _interpreter!.getOutputTensor(0);
-
-      if (_inputType == TensorType.float32) {
-        inputTensor.setTo(preprocessed.inputBuffer.buffer.asUint8List());
-      } else {
-        // Fallback nếu nạp nhầm model uint8/int8: lượng tử hóa nhanh từ [0..1]
-        final Int8List quantizedInput = Int8List(preprocessed.inputBuffer.length);
-        for (int i = 0; i < preprocessed.inputBuffer.length; i++) {
-          final int val = (preprocessed.inputBuffer[i] * 255.0 - 128.0)
-              .round()
-              .clamp(-128, 127);
-          quantizedInput[i] = val;
-        }
-        inputTensor.setTo(quantizedInput.buffer.asUint8List());
-      }
-
-      // Thực thi suy luận trên thiết bị
-      _interpreter!.invoke();
-
-      // Đọc dữ liệu từ Output Tensor
-      if (_outputType == TensorType.float32) {
-        final Uint8List rawOutBytes = outputTensor.data;
-        final Float32List floatView = rawOutBytes.buffer.asFloat32List(
-          rawOutBytes.offsetInBytes,
-          numOutputElements,
-        );
-        outputFloatBuffer.setAll(0, floatView);
-      } else {
-        final Uint8List rawOutBytes = outputTensor.data;
-        for (int i = 0; i < numOutputElements && i < rawOutBytes.length; i++) {
-          outputFloatBuffer[i] = (rawOutBytes[i] & 0xFF) / 255.0;
-        }
-      }
-
-      // 4. Giải mã ma trận YOLOv8 với ngưỡng sàn lowConfidenceFloor
-      final List<BoundingBox> boxes = YoloDecoder.decodeOutput(
-        flatOutput: outputFloatBuffer,
+        isYuv420: isYuv420,
+        yBytes: Uint8List.fromList(cameraImage.planes[0].bytes),
+        uBytes: isYuv420 && cameraImage.planes.length >= 3
+            ? Uint8List.fromList(cameraImage.planes[1].bytes)
+            : null,
+        vBytes: isYuv420 && cameraImage.planes.length >= 3
+            ? Uint8List.fromList(cameraImage.planes[2].bytes)
+            : null,
+        yRowStride: cameraImage.planes[0].bytesPerRow,
+        yPixelStride: cameraImage.planes[0].bytesPerPixel ?? 1,
+        uvRowStride: isYuv420 && cameraImage.planes.length >= 3
+            ? cameraImage.planes[1].bytesPerRow
+            : 0,
+        uvPixelStride: isYuv420 && cameraImage.planes.length >= 3
+            ? (cameraImage.planes[1].bytesPerPixel ?? 1)
+            : 1,
         outputShape: _outputShape,
-        inputSize: _inputSize,
-        confidenceThreshold: lowConfidenceFloor,
+        isFloatInput: _inputType == TensorType.float32,
+        isFloatOutput: _outputType == TensorType.float32,
+        lowConfidenceFloor: lowConfidenceFloor,
         iouThreshold: iouThreshold,
-        padX: preprocessed.padX,
-        padY: preprocessed.padY,
-        scaleWidth: preprocessed.scaleWidth,
-        scaleHeight: preprocessed.scaleHeight,
+      );
+
+      // Đẩy toàn bộ việc nặng sang luồng Isolate ngầm, giải phóng 100% UI Thread
+      final _IsolateInferenceOutput isolateOut = await Isolate.run(
+        () => _runHeavyInferenceInIsolate(payload),
       );
 
       stopwatch.stop();
       final int elapsedMs = stopwatch.elapsedMilliseconds;
 
-      // 5. Đánh giá kết quả và phân loại trạng thái
+      final dummyPreprocessed = PreprocessedFrame(
+        inputBuffer: Float32List(0),
+        meanBrightness: isolateOut.meanBrightness,
+        contrastStdDev: isolateOut.contrastStdDev,
+        padX: 0.0,
+        padY: 0.0,
+        scaleWidth: 1.0,
+        scaleHeight: 1.0,
+      );
+
       return _evaluateDetections(
-        boxes: boxes,
-        preprocessed: preprocessed,
+        boxes: isolateOut.boxes,
+        preprocessed: dummyPreprocessed,
         inferenceTimeMs: elapsedMs,
       );
     } catch (e, stack) {
@@ -214,12 +246,155 @@ class MoneyDetector implements DetectorService {
     }
   }
 
+  /// Hàm tĩnh chạy hoàn toàn trên Worker Isolate (không làm khựng Camera).
+  static _IsolateInferenceOutput _runHeavyInferenceInIsolate(
+    _IsolateFramePayload p,
+  ) {
+    final int targetSize = p.targetSize;
+    final int planeSize = targetSize * targetSize;
+    final Float32List inputBuffer = Float32List(3 * planeSize);
+
+    double sumLuma = 0.0;
+    double sumLumaSq = 0.0;
+    int sampleCount = 0;
+
+    final int srcWidth = p.width;
+    final int srcHeight = p.height;
+
+    for (int ty = 0; ty < targetSize; ty++) {
+      final double normY = ty / targetSize;
+      for (int tx = 0; tx < targetSize; tx++) {
+        final double normX = tx / targetSize;
+
+        int srcX;
+        int srcY;
+        switch (p.sensorOrientation) {
+          case 90:
+            srcX = (normY * (srcWidth - 1)).toInt();
+            srcY = ((1.0 - normX) * (srcHeight - 1)).toInt();
+            break;
+          case 180:
+            srcX = ((1.0 - normX) * (srcWidth - 1)).toInt();
+            srcY = ((1.0 - normY) * (srcHeight - 1)).toInt();
+            break;
+          case 270:
+            srcX = ((1.0 - normY) * (srcWidth - 1)).toInt();
+            srcY = (normX * (srcHeight - 1)).toInt();
+            break;
+          default:
+            srcX = (normX * (srcWidth - 1)).toInt();
+            srcY = (normY * (srcHeight - 1)).toInt();
+            break;
+        }
+
+        int r = 0, g = 0, b = 0;
+        if (p.isYuv420 && p.uBytes != null && p.vBytes != null) {
+          final int yIdx = srcY * p.yRowStride + srcX * p.yPixelStride;
+          final int uvIdx =
+              (srcY >> 1) * p.uvRowStride + (srcX >> 1) * p.uvPixelStride;
+
+          final int yVal = p.yBytes[yIdx.clamp(0, p.yBytes.length - 1)] & 0xFF;
+          final int uVal = p.uBytes![uvIdx.clamp(0, p.uBytes!.length - 1)] & 0xFF;
+          final int vVal = p.vBytes![uvIdx.clamp(0, p.vBytes!.length - 1)] & 0xFF;
+
+          final int c = yVal - 16;
+          final int d = uVal - 128;
+          final int e = vVal - 128;
+
+          r = ((298 * c + 409 * e + 128) >> 8).clamp(0, 255);
+          g = ((298 * c - 100 * d - 208 * e + 128) >> 8).clamp(0, 255);
+          b = ((298 * c + 516 * d + 128) >> 8).clamp(0, 255);
+
+          if ((tx & 7) == 0 && (ty & 7) == 0) {
+            sumLuma += yVal;
+            sumLumaSq += yVal * yVal;
+            sampleCount++;
+          }
+        } else {
+          final int bgraIdx = srcY * p.yRowStride + srcX * 4;
+          if (bgraIdx + 2 < p.yBytes.length) {
+            b = p.yBytes[bgraIdx] & 0xFF;
+            g = p.yBytes[bgraIdx + 1] & 0xFF;
+            r = p.yBytes[bgraIdx + 2] & 0xFF;
+          }
+        }
+
+        final int pixelIdx = ty * targetSize + tx;
+        if (p.isChannelsFirst) {
+          inputBuffer[pixelIdx] = r / 255.0;
+          inputBuffer[planeSize + pixelIdx] = g / 255.0;
+          inputBuffer[2 * planeSize + pixelIdx] = b / 255.0;
+        } else {
+          final int baseIdx = pixelIdx * 3;
+          inputBuffer[baseIdx] = r / 255.0;
+          inputBuffer[baseIdx + 1] = g / 255.0;
+          inputBuffer[baseIdx + 2] = b / 255.0;
+        }
+      }
+    }
+
+    // Gọi trực tiếp TFLite Interpreter từ địa chỉ bộ nhớ C++ trong Isolate ngầm
+    final interpreter = Interpreter.fromAddress(p.interpreterAddress);
+    final inputTensor = interpreter.getInputTensor(0);
+    final outputTensor = interpreter.getOutputTensor(0);
+
+    if (p.isFloatInput) {
+      inputTensor.setTo(inputBuffer.buffer.asUint8List());
+    } else {
+      final Int8List qIn = Int8List(inputBuffer.length);
+      for (int i = 0; i < inputBuffer.length; i++) {
+        qIn[i] = (inputBuffer[i] * 255.0 - 128.0).round().clamp(-128, 127);
+      }
+      inputTensor.setTo(qIn.buffer.asUint8List());
+    }
+
+    interpreter.invoke();
+
+    final int numOutputElements = p.outputShape.fold<int>(
+      1,
+      (prev, elem) => prev * elem,
+    );
+    final Float32List outputFloatBuffer = Float32List(numOutputElements);
+
+    if (p.isFloatOutput) {
+      final Uint8List rawOut = outputTensor.data;
+      final Float32List view = rawOut.buffer.asFloat32List(
+        rawOut.offsetInBytes,
+        numOutputElements,
+      );
+      outputFloatBuffer.setAll(0, view);
+    } else {
+      final Uint8List rawOut = outputTensor.data;
+      for (int i = 0; i < numOutputElements && i < rawOut.length; i++) {
+        outputFloatBuffer[i] = (rawOut[i] & 0xFF) / 255.0;
+      }
+    }
+
+    final List<BoundingBox> boxes = YoloDecoder.decodeOutput(
+      flatOutput: outputFloatBuffer,
+      outputShape: p.outputShape,
+      inputSize: targetSize,
+      confidenceThreshold: p.lowConfidenceFloor,
+      iouThreshold: p.iouThreshold,
+    );
+
+    final double meanLuma = sampleCount > 0 ? (sumLuma / sampleCount) : 128.0;
+    final double variance = sampleCount > 0
+        ? ((sumLumaSq / sampleCount) - (meanLuma * meanLuma)).clamp(0.0, 65025.0)
+        : 0.0;
+
+    return _IsolateInferenceOutput(
+      boxes: boxes,
+      meanBrightness: meanLuma,
+      contrastStdDev: variance,
+    );
+  }
+
   DetectionResult _evaluateDetections({
     required List<BoundingBox> boxes,
     required PreprocessedFrame preprocessed,
     required int inferenceTimeMs,
   }) {
-    // Nếu không tìm thấy vật thể nào -> kiểm tra xem có phải do phòng quá tối không
     if (boxes.isEmpty) {
       final lightingIssue = qualityService.evaluateLighting(preprocessed);
       if (lightingIssue != null) {
@@ -236,12 +411,10 @@ class MoneyDetector implements DetectorService {
       );
     }
 
-    // Lọc các hộp đạt ngưỡng tin cậy cao
     final List<BoundingBox> confidentBoxes = boxes
         .where((b) => b.confidence >= confidenceThreshold)
         .toList();
 
-    // Kiểm tra trường hợp có từ 2 tờ tiền độc lập trở lên trong khung hình
     if (confidentBoxes.length >= 2) {
       return DetectionResult(
         status: DetectionStatus.multipleNotes,
@@ -257,7 +430,6 @@ class MoneyDetector implements DetectorService {
 
     final BoundingBox bestBox = boxes.first;
 
-    // Kiểm tra khoảng cách cầm máy (quá sát hoặc quá xa)
     final geometryIssue = qualityService.evaluateBoxGeometry(bestBox);
     if (geometryIssue != null) {
       return DetectionResult(
@@ -272,7 +444,6 @@ class MoneyDetector implements DetectorService {
       );
     }
 
-    // Nếu độ tin cậy nằm trong vùng lấp lửng [lowConfidenceFloor .. confidenceThreshold)
     if (bestBox.confidence < confidenceThreshold ||
         bestBox.denomination == null) {
       return DetectionResult(
@@ -289,7 +460,6 @@ class MoneyDetector implements DetectorService {
       );
     }
 
-    // Nhận diện thành công 1 tờ tiền rõ ràng
     return DetectionResult(
       denomination: bestBox.denomination,
       side: bestBox.side,
