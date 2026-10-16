@@ -1,4 +1,3 @@
-
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/models/app_settings.dart';
@@ -8,17 +7,14 @@ class SettingsService {
   static const String _vibrationKey = 'vibration_enabled';
   static const String _speechRateKey = 'speech_rate';
 
-  final SharedPreferencesAsync _prefs = SharedPreferencesAsync();
+  late final SharedPreferencesAsync _prefs = SharedPreferencesAsync();
 
   Future<AppSettings> loadSettings() async {
-    final autoRead =
-        await _prefs.getBool(_autoReadKey) ?? true;
+    final autoRead = await _prefs.getBool(_autoReadKey) ?? true;
 
-    final vibration =
-        await _prefs.getBool(_vibrationKey) ?? true;
+    final vibration = await _prefs.getBool(_vibrationKey) ?? true;
 
-    final rateName =
-        await _prefs.getString(_speechRateKey) ?? 'normal';
+    final rateName = await _prefs.getString(_speechRateKey) ?? 'normal';
 
     final speechRate = SpeechRateOption.values.firstWhere(
       (rate) => rate.name == rateName,

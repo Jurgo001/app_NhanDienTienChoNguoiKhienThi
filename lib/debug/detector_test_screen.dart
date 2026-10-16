@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 
@@ -22,6 +23,8 @@ class _DetectorTestScreenState extends State<DetectorTestScreen>
   late final MockMoneyDetector _mockDetector;
 
   bool _useMock = false;
+  bool _closing = false;
+  late final Future<void> _initialization;
   bool _isLoading = true;
   String? _errorBanner;
   DetectionResult _latestResult = DetectionResult.empty();
@@ -37,7 +40,7 @@ class _DetectorTestScreenState extends State<DetectorTestScreen>
       modelAssetPath: 'assets/models/best_float32.tflite',
     );
     _mockDetector = MockMoneyDetector();
-    _initPipeline();
+    _initialization = _initPipeline();
   }
 
   Future<void> _initPipeline() async {
@@ -56,7 +59,9 @@ class _DetectorTestScreenState extends State<DetectorTestScreen>
             'Không nạp được best_float32.tflite: $e.\nBạn có thể bật công tắc MOCK ở góc phải để test luồng.';
       }
 
+      if (_closing) return;
       await _cameraService.initializeCamera();
+      if (_closing) return;
       await _cameraService.startStream(_onCameraFrame);
     } catch (e) {
       _errorBanner = 'Lỗi khởi tạo Camera/Detector: $e';
@@ -90,16 +95,27 @@ class _DetectorTestScreenState extends State<DetectorTestScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    _cameraService.handleAppLifecycleState(state);
+    if (_closing || _isLoading) return;
+    unawaited(_cameraService.handleAppLifecycleState(state).then((_) {
+      if (mounted) setState(() {});
+    }).catchError((Object error) {
+      if (mounted) setState(() => _errorBanner = 'Lỗi camera: $error');
+    }));
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _cameraService.dispose();
-    _realDetector.dispose();
-    _mockDetector.dispose();
+    _closing = true;
+    unawaited(_release());
     super.dispose();
+  }
+
+  Future<void> _release() async {
+    await _initialization;
+    await _cameraService.dispose();
+    await _realDetector.dispose();
+    await _mockDetector.dispose();
   }
 
   @override
@@ -118,7 +134,7 @@ class _DetectorTestScreenState extends State<DetectorTestScreen>
               const Text('MOCK', style: TextStyle(fontSize: 12)),
               Switch(
                 value: _useMock,
-                activeColor: Colors.amber,
+                activeThumbColor: Colors.amber,
                 onChanged: (val) {
                   setState(() {
                     _useMock = val;
@@ -171,8 +187,7 @@ class _DetectorTestScreenState extends State<DetectorTestScreen>
   }
 
   Widget _buildBottomTelemetryPanel() {
-    final denomText =
-        _latestResult.denomination?.displayText ?? '---';
+    final denomText = _latestResult.denomination?.displayText ?? '---';
     final sideText = _latestResult.side.label;
     final confPct = (_latestResult.confidence * 100).toStringAsFixed(1);
 
@@ -191,9 +206,12 @@ class _DetectorTestScreenState extends State<DetectorTestScreen>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                _latestResult.isMock ? 'CHẾ ĐỘ: MÔ PHỎNG (MOCK)' : 'CHẾ ĐỘ: AI TFLITE THẬT',
+                _latestResult.isMock
+                    ? 'CHẾ ĐỘ: MÔ PHỎNG (MOCK)'
+                    : 'CHẾ ĐỘ: AI TFLITE THẬT',
                 style: TextStyle(
-                  color: _latestResult.isMock ? Colors.amber : Colors.greenAccent,
+                  color:
+                      _latestResult.isMock ? Colors.amber : Colors.greenAccent,
                   fontWeight: FontWeight.bold,
                   fontSize: 13,
                 ),
@@ -259,8 +277,7 @@ class _BoundingBoxPainter extends CustomPainter {
       canvas.drawRect(rect, paint);
 
       final textSpan = TextSpan(
-        text:
-            '${box.rawLabel} ${(box.confidence * 100).toStringAsFixed(0)}%',
+        text: '${box.rawLabel} ${(box.confidence * 100).toStringAsFixed(0)}%',
         style: TextStyle(
           color: Colors.black,
           fontSize: 12,

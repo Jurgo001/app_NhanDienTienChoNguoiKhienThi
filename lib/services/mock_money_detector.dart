@@ -78,7 +78,6 @@ class MockMoneyDetector implements DetectorService {
     _isBusy = true;
     try {
       await Future<void>.delayed(Duration(milliseconds: simulatedDelayMs));
-      _frameCounter++;
       return buildMockResult();
     } finally {
       _isBusy = false;
@@ -87,6 +86,7 @@ class MockMoneyDetector implements DetectorService {
 
   /// Tạo kết quả giả lập trực tiếp (có thể gọi khi test không cần mở Camera).
   DetectionResult buildMockResult() {
+    _frameCounter++;
     switch (scenario) {
       case MockScenario.noMoney:
         return DetectionResult.empty(
@@ -98,7 +98,8 @@ class MockMoneyDetector implements DetectorService {
       case MockScenario.tooDark:
         return DetectionResult(
           status: DetectionStatus.tooDark,
-          message: '[MOCK] ${ImageQualityService.getGuidanceMessage(DetectionStatus.tooDark)}',
+          message:
+              '[MOCK] ${ImageQualityService.getGuidanceMessage(DetectionStatus.tooDark)}',
           inferenceTimeMs: simulatedDelayMs,
           brightness: 18.0,
           isMock: true,
@@ -122,7 +123,8 @@ class MockMoneyDetector implements DetectorService {
           confidence: 0.62,
           boxes: const [box],
           status: DetectionStatus.lowConfidence,
-          message: '[MOCK] ${ImageQualityService.getGuidanceMessage(DetectionStatus.lowConfidence)}',
+          message:
+              '[MOCK] ${ImageQualityService.getGuidanceMessage(DetectionStatus.lowConfidence)}',
           inferenceTimeMs: simulatedDelayMs,
           brightness: 120.0,
           isMock: true,
@@ -155,7 +157,8 @@ class MockMoneyDetector implements DetectorService {
           status: DetectionStatus.multipleNotes,
           boxes: const [box1, box2],
           confidence: 0.91,
-          message: '[MOCK] ${ImageQualityService.getGuidanceMessage(DetectionStatus.multipleNotes)}',
+          message:
+              '[MOCK] ${ImageQualityService.getGuidanceMessage(DetectionStatus.multipleNotes)}',
           inferenceTimeMs: simulatedDelayMs,
           brightness: 135.0,
           isMock: true,
@@ -168,9 +171,8 @@ class MockMoneyDetector implements DetectorService {
         final all = Denomination.values;
         // Đổi mệnh giá sau mỗi 15 lượt quét để dễ quan sát ổn định nhiều frame
         final index = (_frameCounter ~/ 15) % all.length;
-        final side = (_frameCounter % 2 == 0)
-            ? BanknoteSide.front
-            : BanknoteSide.back;
+        final side =
+            (_frameCounter % 2 == 0) ? BanknoteSide.front : BanknoteSide.back;
         return _createDetectedMock(all[index], side);
     }
   }

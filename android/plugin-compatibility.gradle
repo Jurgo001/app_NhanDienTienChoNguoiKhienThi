@@ -1,0 +1,16 @@
+// tflite_flutter 0.11.0 biên dịch Java 8; không để Kotlin kế thừa JDK chạy Gradle.
+// CameraX cần concurrent-futures trên compile classpath để đọc type annotations.
+subprojects { p ->
+    p.afterEvaluate {
+        if (p.name == 'tflite_flutter') {
+            p.tasks.matching {
+                it.name.startsWith('compile') && it.name.endsWith('Kotlin')
+            }.configureEach {
+                kotlinOptions.jvmTarget = '1.8'
+            }
+        }
+        if (p.name == 'camera_android_camerax') {
+            p.dependencies.add('implementation', 'androidx.concurrent:concurrent-futures:1.1.0')
+        }
+    }
+}

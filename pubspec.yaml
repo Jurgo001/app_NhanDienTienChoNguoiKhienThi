@@ -21,6 +21,9 @@ dependencies:
   vibration: ^3.2.1
 
 dev_dependencies:
+  archive: ^4.5.2
+  camera_platform_interface: ^2.15.0
+  shared_preferences_platform_interface: ^2.4.2
   flutter_test:
     sdk: flutter
 

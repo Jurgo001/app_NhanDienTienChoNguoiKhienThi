@@ -1,3 +1,5 @@
+> **Cập nhật tích hợp:** App chính đã ghép TV1–TV2–TV3 qua ScanSession và NativeScanBackend. Chạy lib/main.dart; màn chẩn đoán TV2 riêng chuyển sang lib/main_detector_test.dart. Tham khảo [README.md](README.md) và [INTEGRATION_FIXES.md](INTEGRATION_FIXES.md). Đoạn ghép thủ công bên dưới được giữ làm tài liệu module; không tạo thêm CameraService trong các màn UI vì app đã quản lý một pipeline chung. Tiền xử lý hiện dùng một ImageConverter cho cả worker và test, float32/letterbox; dispose đợi inference kết thúc.
+
 # TÀI LIỆU GHI CHÚ BÀN GIAO MODULE TV2 (CAMERA & AI INTEGRATION)
 
 Tài liệu này liệt kê chi tiết các file đã triển khai theo phân công, các class/thuộc tính phụ trợ được thiết kế thêm để hệ thống hoạt động ổn định, cùng hướng dẫn kết nối dành cho **TV3 (Logic & Accessibility)**.

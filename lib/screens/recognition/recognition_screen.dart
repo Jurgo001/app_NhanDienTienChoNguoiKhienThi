@@ -20,6 +20,10 @@ class RecognitionScreen extends StatelessWidget {
     required this.onOpenGuide,
     required this.onOpenPermission,
     this.cameraPreview,
+    this.isMockBackend = true,
+    this.isStarting = false,
+    this.serviceNotice,
+    this.onRetryServices,
     this.debugControls,
   });
 
@@ -31,6 +35,9 @@ class RecognitionScreen extends StatelessWidget {
   final VoidCallback onOpenGuide;
   final VoidCallback onOpenPermission;
   final Widget? cameraPreview;
+  final bool isMockBackend, isStarting;
+  final String? serviceNotice;
+  final VoidCallback? onRetryServices;
   final Widget? debugControls;
 
   @override
@@ -62,6 +69,20 @@ class RecognitionScreen extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 20),
+        if (isMockBackend)
+          const Padding(
+            padding: EdgeInsets.only(bottom: 12),
+            child: Text('CHẾ ĐỘ MÔ PHỎNG • Không nhận diện tiền thật',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: AppColors.yellow)),
+          ),
+        if (serviceNotice != null) ...[
+          Text(serviceNotice!, style: const TextStyle(color: AppColors.yellow)),
+          TextButton(
+              onPressed: onRetryServices,
+              child: const Text('Thử lại âm thanh / cài đặt',
+                  style: TextStyle(color: Colors.white))),
+        ],
         SizedBox(
           height: cameraHeight,
           child: cameraPreview == null
@@ -99,8 +120,10 @@ class RecognitionScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      const Text(
-                        AppStrings.cameraPlaceholder,
+                      Text(
+                        isMockBackend
+                            ? AppStrings.cameraPlaceholder
+                            : 'Camera chưa mở',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Colors.white70,
@@ -124,9 +147,17 @@ class RecognitionScreen extends StatelessWidget {
         DenominationCard(
           denomination: state.hasResult ? state.denomination : null,
           isMock: state.isMock,
+          spokenDenomination: state.spokenDenomination,
           emptyMessage: emptyMessage,
         ),
         const SizedBox(height: 14),
+        if (state.guidance != null &&
+            state.status == RecognitionUiStatus.scanning)
+          Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Text(state.guidance!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.white, fontSize: 18))),
         if (state.hasResult) ...[
           AccessibleButton(
             key: const Key('replay_button'),
@@ -143,9 +174,17 @@ class RecognitionScreen extends StatelessWidget {
         ] else ...[
           AccessibleButton(
             key: const Key('scan_button'),
-            label: isReady ? AppStrings.startScan : AppStrings.scanAgain,
+            label: isStarting
+                ? 'Đang mở camera / mô hình…'
+                : isReady
+                    ? AppStrings.startScan
+                    : AppStrings.scanAgain,
             icon: Icons.photo_camera_outlined,
-            onPressed: isReady ? onStartScanning : onResetScan,
+            onPressed: isStarting
+                ? null
+                : isReady
+                    ? onStartScanning
+                    : onResetScan,
           ),
           const SizedBox(height: 10),
           AccessibleButton(
@@ -157,6 +196,10 @@ class RecognitionScreen extends StatelessWidget {
           ),
         ],
         const Spacer(),
+        if (state.hasResult)
+          const Text('Phiên mới sau 15 giây',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white70)),
         const SizedBox(height: 12),
         Wrap(
           alignment: WrapAlignment.spaceBetween,

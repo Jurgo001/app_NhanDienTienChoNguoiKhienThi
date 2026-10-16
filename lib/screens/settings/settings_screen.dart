@@ -90,7 +90,7 @@ class SettingsScreen extends StatelessWidget {
         ),
         const SizedBox(height: 24),
         const Text(
-          'Thay đổi được giữ trong phiên sử dụng.',
+          'Thay đổi được lưu tự động và giữ lại khi mở ứng dụng.',
           style: TextStyle(color: AppColors.muted, height: 1.5),
         ),
         Align(

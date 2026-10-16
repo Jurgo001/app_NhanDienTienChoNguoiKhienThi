@@ -42,3 +42,9 @@ android {
 flutter {
     source = "../.."
 }
+
+// App dùng Interpreter CPU (4 threads). Nhánh GPU của tflite_flutter 0.11.0
+// kéo vào GpuDelegate thiếu GpuDelegateFactory.Options khi R8 chạy release.
+configurations.configureEach {
+    exclude(group = "org.tensorflow", module = "tensorflow-lite-gpu")
+}

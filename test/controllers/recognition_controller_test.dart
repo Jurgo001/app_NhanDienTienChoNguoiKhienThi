@@ -1,4 +1,3 @@
-
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:app_ho_tro_nguoi_khiem_thi/controllers/recognition_controller.dart';
@@ -155,7 +154,7 @@ void main() {
       controller.state.status,
       RecognitionUiStatus.scanning,
     );
-    expect(speech.speakCount, 0);
+    expect(speech.lastSpokenText, 'Xin giữ yên tay');
   });
 
   test('Đổi mệnh giá giữa các frame sẽ reset bộ đếm', () {
@@ -190,7 +189,7 @@ void main() {
     expect(speech.speakCount, 2);
     expect(
       speech.lastSpokenText,
-      'Một trăm nghìn đồng',
+      'Kết quả mô phỏng. Một trăm nghìn đồng',
     );
   });
 

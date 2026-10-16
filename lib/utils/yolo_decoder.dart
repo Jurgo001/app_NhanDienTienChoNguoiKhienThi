@@ -23,7 +23,15 @@ class YoloDecoder {
     double scaleWidth = 1.0,
     double scaleHeight = 1.0,
   }) {
-    if (outputShape.length < 3 || flatOutput.isEmpty) {
+    if (outputShape.length != 3 ||
+        outputShape[0] != 1 ||
+        flatOutput.isEmpty ||
+        outputShape[1] <= 0 ||
+        outputShape[2] <= 0 ||
+        flatOutput.length != outputShape[1] * outputShape[2] ||
+        inputSize <= 0 ||
+        scaleWidth <= 0 ||
+        scaleHeight <= 0) {
       return const [];
     }
 
@@ -31,12 +39,13 @@ class YoloDecoder {
     final int dim2 = outputShape[2];
 
     // Xác định chiều nào là số kênh (4 box + 18 classes = 22), chiều nào là số neo (3549)
-    final bool isChannelsFirst = dim1 < dim2;
+    final bool isChannelsFirst =
+        dim1 == 4 + DenominationMapper.classLabels.length;
     final int numChannels = isChannelsFirst ? dim1 : dim2;
     final int numAnchors = isChannelsFirst ? dim2 : dim1;
     final int numClasses = numChannels - 4;
 
-    if (numClasses <= 0) return const [];
+    if (numClasses != DenominationMapper.classLabels.length) return const [];
 
     final List<BoundingBox> candidates = [];
 
@@ -50,7 +59,7 @@ class YoloDecoder {
             ? ((4 + c) * numAnchors + i)
             : (i * numChannels + (4 + c));
         final double score = flatOutput[idx];
-        if (score > maxScore) {
+        if (score.isFinite && score > maxScore) {
           maxScore = score;
           bestClassId = c;
         }
@@ -61,10 +70,18 @@ class YoloDecoder {
       }
 
       // 2. Lấy tọa độ tâm (cx, cy) và kích thước (w, h)
-      final double rawCx = flatOutput[isChannelsFirst ? (0 * numAnchors + i) : (i * numChannels + 0)];
-      final double rawCy = flatOutput[isChannelsFirst ? (1 * numAnchors + i) : (i * numChannels + 1)];
-      final double rawW = flatOutput[isChannelsFirst ? (2 * numAnchors + i) : (i * numChannels + 2)];
-      final double rawH = flatOutput[isChannelsFirst ? (3 * numAnchors + i) : (i * numChannels + 3)];
+      final double rawCx = flatOutput[
+          isChannelsFirst ? (0 * numAnchors + i) : (i * numChannels + 0)];
+      final double rawCy = flatOutput[
+          isChannelsFirst ? (1 * numAnchors + i) : (i * numChannels + 1)];
+      final double rawW = flatOutput[
+          isChannelsFirst ? (2 * numAnchors + i) : (i * numChannels + 2)];
+      final double rawH = flatOutput[
+          isChannelsFirst ? (3 * numAnchors + i) : (i * numChannels + 3)];
+
+      if (![rawCx, rawCy, rawW, rawH].every((v) => v.isFinite) ||
+          rawW <= 0 ||
+          rawH <= 0) continue;
 
       // Kiểm tra xem tọa độ đang ở hệ pixel [0..416] hay hệ chuẩn hóa [0..1]
       final bool isPixelCoords =
@@ -99,7 +116,8 @@ class YoloDecoder {
           x2: x2,
           y2: y2,
           classId: bestClassId,
-          rawLabel: mapped?.rawLabel ?? DenominationMapper.getRawLabel(bestClassId),
+          rawLabel:
+              mapped?.rawLabel ?? DenominationMapper.getRawLabel(bestClassId),
           confidence: maxScore.clamp(0.0, 1.0),
           denomination: mapped?.denomination,
           side: mapped?.side ?? BanknoteSide.unknown,

@@ -1,9 +1,10 @@
-
+import 'package:flutter/foundation.dart';
 import 'package:vibration/vibration.dart';
 
 class HapticService {
   /// Rung khi nhận diện thành công.
   Future<void> vibrateSuccess() async {
+    if (kIsWeb) return;
     final hasVibrator = await Vibration.hasVibrator();
 
     if (!hasVibrator) return;
@@ -24,6 +25,6 @@ class HapticService {
 
   /// Dừng rung.
   Future<void> stop() async {
-    await Vibration.cancel();
+    if (!kIsWeb) await Vibration.cancel();
   }
 }

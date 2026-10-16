@@ -8,10 +8,12 @@ class DenominationCard extends StatelessWidget {
     super.key,
     required this.denomination,
     required this.isMock,
+    this.spokenDenomination,
     this.emptyMessage = AppStrings.noResult,
   });
 
   final String? denomination;
+  final String? spokenDenomination;
   final bool isMock;
   final String emptyMessage;
 
@@ -52,12 +54,12 @@ class DenominationCard extends StatelessWidget {
                   height: 1.15,
                 ),
               ),
-              if (hasResult && denomination == AppStrings.mockDenomination) ...[
+              if (hasResult && spokenDenomination != null) ...[
                 const SizedBox(height: 6),
-                const Text(
-                  'Một trăm nghìn đồng',
+                Text(
+                  spokenDenomination!,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 16,
                     fontWeight: FontWeight.w700,

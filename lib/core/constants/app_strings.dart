@@ -1,9 +1,14 @@
 abstract final class AppStrings {
+  static const spokenGuide = 'Bước một. Đặt một tờ tiền trước camera sau. '
+      'Bước hai. Bấm Bắt đầu quét, cho phép camera và giữ yên điện thoại. '
+      'Bước ba. Nghe kết quả. Bấm Đọc lại khi cần. '
+      'Bấm Quét lại để nhận diện tờ khác, hoặc chờ phiên mới sau mười lăm giây. '
+      'Trên Chrome, kết quả chỉ là mô phỏng.';
   static const appTitle = 'Nhận diện tiền Việt Nam';
   static const recognitionTitle = 'Nhận diện mệnh giá';
   static const simulationBanner =
-      'Bản giao diện mô phỏng. Chưa kết nối camera, AI, giọng nói hoặc rung.';
-  static const cameraPlaceholder = 'Camera mô phỏng • chưa bật';
+      'Chrome: mô phỏng nhận diện; Android: camera và model TFLite.';
+  static const cameraPlaceholder = 'Camera mô phỏng trên Chrome';
   static const cameraAlignHelp = 'Đưa một tờ tiền vào giữa khung và giữ yên.';
   static const cameraPermissionTitle = 'Quyền camera';
   static const settingsTitle = 'Tùy chọn';
@@ -21,7 +26,7 @@ abstract final class AppStrings {
   static const scanningRealMessage = 'Đang quét. Giữ yên tờ tiền trong khung.';
   static const recognizedTitle = 'Đã nhận diện';
   static const recognizedMessage =
-      'Đây là kết quả giả để kiểm tra giao diện. Chưa phát âm thanh.';
+      'Kết quả mô phỏng để thử giao diện và giọng đọc.';
   static const recognizedRealMessage = 'Đã có kết quả. Chọn Đọc lại khi cần.';
   static const unclearTitle = 'Chưa rõ';
   static const unclearMessage =
@@ -68,9 +73,9 @@ abstract final class AppStrings {
       'Đây là cấu hình UI mô phỏng. Chưa kết nối TTS hoặc rung; thay đổi chỉ được giữ trong phiên chạy và không lưu sau khi đóng ứng dụng.';
   static const autoRead = 'Tự động đọc kết quả';
   static const autoReadDetail =
-      'Sẽ áp dụng khi thành viên 3 kết nối giọng nói.';
+      'Đọc mệnh giá và hướng dẫn bằng giọng tiếng Việt.';
   static const vibration = 'Rung phản hồi';
-  static const vibrationDetail = 'Sẽ áp dụng khi thành viên 3 kết nối rung.';
+  static const vibrationDetail = 'Rung khi có kết quả hoặc lỗi nhận diện.';
   static const speechRate = 'Tốc độ giọng đọc';
   static const slow = 'Chậm';
   static const normal = 'Vừa';
@@ -82,7 +87,7 @@ abstract final class AppStrings {
   static const guideStep2Detail = 'Nhấn Bắt đầu quét và giữ yên điện thoại.';
   static const guideStep3Title = 'Xem hoặc nghe kết quả';
   static const guideStep3Detail =
-      'Mệnh giá sẽ hiện trên màn hình. Giọng nói sẽ được kết nối sau.';
+      'Mệnh giá được hiện và đọc theo cài đặt âm thanh.';
   static const guideStep4Title = 'Đọc lại khi cần';
   static const guideStep4Detail = 'Nút Đọc lại chỉ bật khi có kết quả.';
   static const guideStep5Title = 'Quét tờ tiền khác';
