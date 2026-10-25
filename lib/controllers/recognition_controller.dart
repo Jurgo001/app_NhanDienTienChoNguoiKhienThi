@@ -84,6 +84,12 @@ class RecognitionController extends ChangeNotifier {
       _candidate = denomination;
       _consecutiveFrames = 1;
     }
+    debugPrint(
+  '[STABLE] '
+  'Menh gia: ${denomination.value} | '
+  'Frame: $_consecutiveFrames/$requiredStableFrames | '
+  'Confidence: ${result.confidence.toStringAsFixed(2)}',
+  );
     if (_consecutiveFrames >= requiredStableFrames) {
       _confirmResult(denomination, isMock: result.isMock);
     }

@@ -7,7 +7,7 @@ import 'package:app_ho_tro_nguoi_khiem_thi/services/camera_service.dart';
 import 'package:app_ho_tro_nguoi_khiem_thi/services/detector_service.dart';
 import 'package:app_ho_tro_nguoi_khiem_thi/services/mock_money_detector.dart';
 import 'package:app_ho_tro_nguoi_khiem_thi/services/money_detector.dart';
-
+import 'package:app_ho_tro_nguoi_khiem_thi/services/detection_csv_logger.dart';
 /// Màn hình kiểm thử nội bộ dành riêng cho TV2 (Camera + TFLite/Mock).
 class DetectorTestScreen extends StatefulWidget {
   const DetectorTestScreen({super.key});
@@ -19,6 +19,7 @@ class DetectorTestScreen extends StatefulWidget {
 class _DetectorTestScreenState extends State<DetectorTestScreen>
     with WidgetsBindingObserver {
   final CameraService _cameraService = CameraService(minFrameIntervalMs: 300);
+  final DetectionCsvLogger _csvLogger = DetectionCsvLogger();
   late final MoneyDetector _realDetector;
   late final MockMoneyDetector _mockDetector;
 
@@ -74,24 +75,37 @@ class _DetectorTestScreenState extends State<DetectorTestScreen>
     }
   }
 
-  Future<void> _onCameraFrame(
-    CameraImage cameraImage,
-    int sensorOrientation,
-  ) async {
-    if (!mounted) return;
-    final result = await _activeDetector.detectFrame(
-      cameraImage,
-      sensorOrientation: sensorOrientation,
-    );
+  
+Future<void> _onCameraFrame(
+  CameraImage cameraImage,
+  int sensorOrientation,
+) async {
+  if (!mounted) return;
 
-    if (result.status == DetectionStatus.skippedBusy) return;
+  final result = await _activeDetector.detectFrame(
+    cameraImage,
+    sensorOrientation: sensorOrientation,
+  );
 
-    if (mounted) {
-      setState(() {
-        _latestResult = result;
-      });
-    }
+  if (result.status == DetectionStatus.skippedBusy) {
+    return;
   }
+
+  // Ghi dữ liệu thực tế của mỗi frame.
+  if (!_useMock) {
+    _csvLogger.add(
+      result,
+      modelName: 'best_float32.tflite',
+    );
+  }
+
+  if (mounted) {
+    setState(() {
+      _latestResult = result;
+    });
+  }
+}
+
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
@@ -180,7 +194,50 @@ class _DetectorTestScreenState extends State<DetectorTestScreen>
                         ),
                       ),
           ),
-          _buildBottomTelemetryPanel(),
+          
+_buildBottomTelemetryPanel(),
+
+Padding(
+  padding: const EdgeInsets.all(12),
+  child: Row(
+    children: [
+      Expanded(
+        child: OutlinedButton.icon(
+          onPressed: () {
+            setState(() {
+              _csvLogger.clear();
+            });
+          },
+          icon: const Icon(Icons.delete_outline),
+          label: const Text('Xóa dữ liệu'),
+        ),
+      ),
+
+      const SizedBox(width: 8),
+
+      Expanded(
+        child: ElevatedButton.icon(
+          onPressed: () async {
+            try {
+              await _csvLogger.exportCsv();
+            } catch (e) {
+              if (!mounted) return;
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Không xuất được CSV: $e'),
+                ),
+              );
+            }
+          },
+          icon: const Icon(Icons.download),
+          label: const Text('Xuất CSV'),
+        ),
+      ),
+    ],
+  ),
+),
+
         ],
       ),
     );

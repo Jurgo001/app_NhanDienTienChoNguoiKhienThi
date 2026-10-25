@@ -43,7 +43,24 @@ _InferenceResult _infer(_InferenceRequest p) {
     isChannelsFirst: p.channelsFirst,
     useLetterbox: p.letterbox,
   );
-  final interpreter = Interpreter.fromAddress(p.address);
+  
+
+
+  
+final interpreter = Interpreter.fromAddress(p.address);
+
+// Đồng bộ trạng thái cấp phát tensor cho wrapper trong isolate.
+interpreter.allocateTensors();
+
+interpreter
+    .getInputTensor(0)
+    .setTo(converted.inputBuffer.buffer.asUint8List());
+
+interpreter.invoke();
+
+
+
+
   interpreter
       .getInputTensor(0)
       .setTo(converted.inputBuffer.buffer.asUint8List());
@@ -166,6 +183,10 @@ class MoneyDetector implements DetectorService {
         useLetterbox,
       );
       final out = await Isolate.run(() => _infer(payload));
+      debugPrint(
+      '[AI_PERF] Frame processing: '
+      '${clock.elapsedMilliseconds} ms',
+      );
       return _evaluateDetections(
         boxes: out.boxes,
         inferenceTimeMs: clock.elapsedMilliseconds,
