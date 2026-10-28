@@ -17,6 +17,9 @@ class NativeScanBackend extends ScanBackend {
   final DetectorService detector;
   CameraController? _listenedCamera;
   VoidCallback? _errorListener;
+  DateTime? _classificationPauseUntil;
+  DetectionStatus? _lastGuidanceStatus;
+  int _sameGuidanceFrames = 0;
 
   @override
   bool get isMock => false;
@@ -60,6 +63,9 @@ class NativeScanBackend extends ScanBackend {
 
   @override
   Future<void> start(DetectionCallback onResult) async {
+    _classificationPauseUntil = null;
+    _lastGuidanceStatus = null;
+    _sameGuidanceFrames = 0;
     final controller = camera.controller;
     if (controller != null) {
       _listenedCamera = controller;
@@ -73,14 +79,45 @@ class NativeScanBackend extends ScanBackend {
       controller.addListener(_errorListener!);
     }
     await camera.startStream((image, rotation) async {
+      final pausedUntil = _classificationPauseUntil;
+      if (pausedUntil != null && DateTime.now().isBefore(pausedUntil)) return;
       try {
-        onResult(
-            await detector.detectFrame(image, sensorOrientation: rotation));
+        final result =
+            await detector.detectFrame(image, sensorOrientation: rotation);
+        onResult(result);
+        if (_needsCorrection(result.status)) {
+          if (_lastGuidanceStatus == result.status) {
+            _sameGuidanceFrames++;
+          } else {
+            _lastGuidanceStatus = result.status;
+            _sameGuidanceFrames = 1;
+          }
+          if (_sameGuidanceFrames >= 3) {
+            _classificationPauseUntil =
+                DateTime.now().add(const Duration(milliseconds: 3500));
+            _sameGuidanceFrames = 0;
+            _lastGuidanceStatus = null;
+          }
+        } else {
+          _sameGuidanceFrames = 0;
+          _lastGuidanceStatus = null;
+        }
       } catch (error) {
         onResult(DetectionResult.error('Lỗi xử lý khung hình: $error'));
       }
     });
   }
+
+  bool _needsCorrection(DetectionStatus status) => switch (status) {
+        DetectionStatus.lowConfidence ||
+        DetectionStatus.multipleNotes ||
+        DetectionStatus.tooClose ||
+        DetectionStatus.tooFar ||
+        DetectionStatus.tooDark ||
+        DetectionStatus.tooBright =>
+          true,
+        _ => false,
+      };
 
   @override
   Future<void> stop({bool releaseCamera = false}) async {

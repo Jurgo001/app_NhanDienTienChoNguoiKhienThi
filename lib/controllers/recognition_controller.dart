@@ -23,13 +23,15 @@ class RecognitionController extends ChangeNotifier {
   RecognitionUiState _state =
       const RecognitionUiState(status: RecognitionUiStatus.ready);
   RecognitionUiState get state => _state;
-  Denomination? _currentDenomination, _candidate;
+  Denomination? _candidate;
   DetectionStatus? _guidanceCandidate;
-  int _consecutiveFrames = 0, _guidanceFrames = 0;
+  int _consecutiveFrames = 0, _guidanceFrames = 0, _emptyFrames = 0;
   DateTime? _lastGuidance;
   bool _disposed = false;
   static const double minimumConfidence = 0.78;
   static const int requiredStableFrames = 3;
+  static const int requiredEmptyFrames = 4;
+  static const Duration guidanceCooldown = Duration(milliseconds: 3500);
 
   void _updateState(RecognitionUiState value) {
     if (_disposed) return;
@@ -47,8 +49,24 @@ class RecognitionController extends ChangeNotifier {
     ));
   }
 
+  void announceScanningPrompt() {
+    if (_state.status != RecognitionUiStatus.scanning || _disposed) return;
+    _lastGuidance = DateTime.now();
+    final prompt = _state.guidance ?? 'Đưa một tờ tiền vào camera';
+    _runFeedback(() => _speech.speak(prompt, rate: _getSettings().speechRate));
+  }
+
   void processDetection(DetectionResult result) {
-    if (_disposed || _state.status != RecognitionUiStatus.scanning) return;
+    if (_disposed) return;
+    if (_state.status == RecognitionUiStatus.lockedAnnounced) {
+      if (result.status == DetectionStatus.noMoney) {
+        if (++_emptyFrames >= requiredEmptyFrames) _beginNextTurn();
+      } else if (result.status != DetectionStatus.skippedBusy) {
+        _emptyFrames = 0;
+      }
+      return;
+    }
+    if (_state.status != RecognitionUiStatus.scanning) return;
     if (result.status == DetectionStatus.skippedBusy) return;
     if (result.status == DetectionStatus.modelError) {
       showError(result.message ?? 'Không thể chạy mô hình nhận diện',
@@ -85,11 +103,11 @@ class RecognitionController extends ChangeNotifier {
       _consecutiveFrames = 1;
     }
     debugPrint(
-  '[STABLE] '
-  'Menh gia: ${denomination.value} | '
-  'Frame: $_consecutiveFrames/$requiredStableFrames | '
-  'Confidence: ${result.confidence.toStringAsFixed(2)}',
-  );
+      '[STABLE] '
+      'Menh gia: ${denomination.value} | '
+      'Frame: $_consecutiveFrames/$requiredStableFrames | '
+      'Confidence: ${result.confidence.toStringAsFixed(2)}',
+    );
     if (_consecutiveFrames >= requiredStableFrames) {
       _confirmResult(denomination, isMock: result.isMock);
     }
@@ -104,48 +122,40 @@ class RecognitionController extends ChangeNotifier {
     }
     final now = DateTime.now();
     if (_guidanceFrames < 3 ||
-        !_getSettings().autoReadEnabled ||
-        (_lastGuidance != null && now.difference(_lastGuidance!).inSeconds < 8))
-      return;
+        (_lastGuidance != null &&
+            now.difference(_lastGuidance!) < guidanceCooldown)) return;
     _lastGuidance = now;
     _runFeedback(() => _speech.speak(message, rate: _getSettings().speechRate));
   }
 
   void _confirmResult(Denomination denomination, {required bool isMock}) {
-    _currentDenomination = denomination;
+    _emptyFrames = 0;
     _updateState(RecognitionUiState(
-      status: RecognitionUiStatus.recognized,
+      status: RecognitionUiStatus.lockedAnnounced,
       denomination: denomination.displayText,
       spokenDenomination: denomination.spokenText,
       isMock: isMock,
     ));
     final settings = _getSettings();
     if (settings.vibrationEnabled) _runFeedback(_haptic.vibrateSuccess);
-    if (settings.autoReadEnabled) {
-      _runFeedback(() => _speech.speak(
-            isMock
-                ? 'Kết quả mô phỏng. ${denomination.spokenText}'
-                : denomination.spokenText,
-            rate: settings.speechRate,
-          ));
-    }
+    _runFeedback(() => _speech.speak(
+          isMock
+              ? 'Kết quả mô phỏng. ${denomination.spokenText}'
+              : denomination.spokenText,
+          rate: settings.speechRate,
+        ));
   }
 
-  Future<void> replayResult() async {
-    final denomination = _currentDenomination;
-    if (denomination == null || _disposed) return;
-    await _speech.speak(
-      _state.isMock
-          ? 'Kết quả mô phỏng. ${denomination.spokenText}'
-          : denomination.spokenText,
-      rate: _getSettings().speechRate,
-    );
-  }
-
-  Future<void> resetScan() async {
+  void _beginNextTurn() {
     final isMock = _state.isMock;
-    startScanning(isMock: isMock);
-    await _speech.stop();
+    _clearResult();
+    _lastGuidance = null;
+    _updateState(RecognitionUiState(
+      status: RecognitionUiStatus.scanning,
+      guidance: 'Đưa một tờ tiền vào camera',
+      isMock: isMock,
+    ));
+    announceScanningPrompt();
   }
 
   void clearCandidate() {
@@ -156,7 +166,7 @@ class RecognitionController extends ChangeNotifier {
   }
 
   void _clearResult() {
-    _currentDenomination = null;
+    _emptyFrames = 0;
     clearCandidate();
   }
 

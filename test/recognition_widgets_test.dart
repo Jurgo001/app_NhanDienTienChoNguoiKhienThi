@@ -1,7 +1,6 @@
 import 'package:app_ho_tro_nguoi_khiem_thi/core/constants/app_strings.dart';
 import 'package:app_ho_tro_nguoi_khiem_thi/core/models/recognition_ui_state.dart';
 import 'package:app_ho_tro_nguoi_khiem_thi/screens/recognition/recognition_screen.dart';
-import 'package:app_ho_tro_nguoi_khiem_thi/widgets/accessible_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -9,9 +8,6 @@ Widget _screen(RecognitionUiState state) {
   return MaterialApp(
     home: RecognitionScreen(
       state: state,
-      onStartScanning: () {},
-      onReplayResult: () {},
-      onResetScan: () {},
       onOpenSettings: () {},
       onOpenGuide: () {},
       onOpenPermission: () {},
@@ -29,15 +25,10 @@ void main() {
     expect(find.text(AppStrings.cameraPlaceholder), findsOneWidget);
     expect(find.text(AppStrings.noResult), findsOneWidget);
     expect(find.text(AppStrings.mockDenomination), findsNothing);
-    expect(
-      tester
-          .widget<AccessibleButton>(find.byKey(const Key('replay_button')))
-          .onPressed,
-      isNull,
-    );
   });
 
-  testWidgets('Kết quả demo có nhãn semantics và bật Đọc lại', (tester) async {
+  testWidgets('Kết quả demo có nhãn semantics, không có nút đọc lại',
+      (tester) async {
     final semantics = tester.ensureSemantics();
     await tester.pumpWidget(
       _screen(
@@ -50,19 +41,13 @@ void main() {
 
     expect(find.text(AppStrings.mockResultLabel), findsOneWidget);
     expect(find.text(AppStrings.mockDenomination), findsOneWidget);
-    expect(
-      tester
-          .widget<AccessibleButton>(find.byKey(const Key('replay_button')))
-          .onPressed,
-      isNotNull,
-    );
+    expect(find.byKey(const Key('replay_button')), findsNothing);
     expect(
       find.bySemanticsLabel(
         '${AppStrings.mockResultLabel}: ${AppStrings.mockDenomination}',
       ),
       findsOneWidget,
     );
-    expect(find.bySemanticsLabel(AppStrings.replay), findsOneWidget);
     semantics.dispose();
   });
 
@@ -145,7 +130,7 @@ void main() {
       ),
     );
     expect(tester.takeException(), isNull);
-    await tester.ensureVisible(find.byKey(const Key('replay_button')));
+    await tester.ensureVisible(find.text(AppStrings.guideTitle));
     await tester.pump();
     expect(tester.takeException(), isNull);
   });

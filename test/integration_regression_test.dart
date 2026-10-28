@@ -11,7 +11,6 @@ import 'package:shared_preferences_platform_interface/in_memory_shared_preferenc
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 
 import 'package:app_ho_tro_nguoi_khiem_thi/controllers/recognition_controller.dart';
-import 'package:app_ho_tro_nguoi_khiem_thi/controllers/settings_controller.dart';
 
 import 'package:app_ho_tro_nguoi_khiem_thi/core/models/app_settings.dart';
 import 'package:app_ho_tro_nguoi_khiem_thi/core/models/recognition_ui_state.dart';
@@ -19,7 +18,6 @@ import 'package:app_ho_tro_nguoi_khiem_thi/models/denomination.dart';
 import 'package:app_ho_tro_nguoi_khiem_thi/models/detection_result.dart';
 import 'package:app_ho_tro_nguoi_khiem_thi/services/camera_service.dart';
 import 'package:app_ho_tro_nguoi_khiem_thi/services/haptic_service.dart';
-import 'package:app_ho_tro_nguoi_khiem_thi/services/settings_service.dart';
 import 'package:app_ho_tro_nguoi_khiem_thi/services/speech_service.dart';
 import 'package:app_ho_tro_nguoi_khiem_thi/utils/denomination_mapper.dart';
 import 'package:app_ho_tro_nguoi_khiem_thi/utils/image_converter.dart';
@@ -191,7 +189,7 @@ void main() {
     for (var i = 0; i < 8; i++) {
       controller.processDetection(valid());
     }
-    expect(controller.state.status, RecognitionUiStatus.recognized);
+    expect(controller.state.status, RecognitionUiStatus.lockedAnnounced);
     expect(controller.state.isMock, isFalse);
     expect(speech.count, 1);
     expect(haptic.count, 1);
@@ -204,7 +202,7 @@ void main() {
     controller
         .processDetection(DetectionResult(status: DetectionStatus.skippedBusy));
     controller.processDetection(valid());
-    expect(controller.state.status, RecognitionUiStatus.recognized);
+    expect(controller.state.status, RecognitionUiStatus.lockedAnnounced);
   });
 
   test('noMoney must replace stale tooDark guidance', () {
@@ -214,45 +212,6 @@ void main() {
     final empty = DetectionResult.empty();
     controller.processDetection(empty);
     expect(controller.state.guidance, empty.message);
-  });
-
-  test('reset must clear recognized UI before awaiting TTS stop', () async {
-    controller.startScanning();
-    for (var i = 0; i < 3; i++) {
-      controller.processDetection(valid());
-    }
-    speech.stopGate = Completer<void>();
-    final resetting = controller.resetScan();
-    final stillShowsResult = controller.state.hasResult;
-    speech.stopGate!.complete();
-    await resetting;
-    expect(stillShowsResult, isFalse);
-  });
-
-  test('settings persist across service instances', () async {
-    final settings = const AppSettings(
-        autoReadEnabled: false,
-        vibrationEnabled: false,
-        speechRate: SpeechRateOption.fast);
-    await SettingsService().saveSettings(settings);
-    final loaded = await SettingsService().loadSettings();
-    expect(loaded.autoReadEnabled, isFalse);
-    expect(loaded.vibrationEnabled, isFalse);
-    expect(loaded.speechRate, SpeechRateOption.fast);
-  });
-
-  test('concurrent settings changes must preserve both toggles', () async {
-    final settingsController = SettingsController(SettingsService());
-    await settingsController.initialize();
-    await Future.wait([
-      settingsController.setAutoRead(false),
-      settingsController.setVibration(false)
-    ]);
-    final autoRead = settingsController.settings.autoReadEnabled;
-    final vibration = settingsController.settings.vibrationEnabled;
-    settingsController.dispose();
-    expect(autoRead, isFalse);
-    expect(vibration, isFalse);
   });
 
   test('camera must initialize again after inactive then resumed', () async {

@@ -36,13 +36,13 @@ class GuideScreen extends StatelessWidget {
           number: 2,
           title: 'Giữ yên điện thoại',
           detail:
-              'Bấm Bắt đầu quét, cấp quyền camera rồi giữ yên để ứng dụng nhận diện.',
+              'Ứng dụng tự mở camera và nhận diện khi camera cùng giọng nói đã sẵn sàng.',
         ),
         const _GuideStep(
           number: 3,
           title: 'Nghe kết quả',
           detail:
-              'Bấm “Đọc lại” khi cần. Chọn “Quét lại” để nhận diện tờ khác, hoặc chờ phiên mới sau 15 giây.',
+              'Ứng dụng tự động đọc mệnh giá. Đưa tờ tiền ra khỏi camera để quét tờ tiếp theo (hoặc đưa vào lại nếu chưa nghe rõ).',
         ),
         const Spacer(),
         const SizedBox(height: 24),

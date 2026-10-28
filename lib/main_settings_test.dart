@@ -14,8 +14,7 @@ class SettingsTestApp extends StatefulWidget {
   const SettingsTestApp({super.key});
 
   @override
-  State<SettingsTestApp> createState() =>
-      _SettingsTestAppState();
+  State<SettingsTestApp> createState() => _SettingsTestAppState();
 }
 
 class _SettingsTestAppState extends State<SettingsTestApp> {
@@ -58,16 +57,9 @@ class _SettingsTestAppState extends State<SettingsTestApp> {
               padding: const EdgeInsets.all(20),
               children: [
                 SwitchListTile(
-                  title: const Text('Tự động đọc mệnh giá'),
-                  value: settings.autoReadEnabled,
-                  onChanged: (value) =>
-                      controller.setAutoRead(value),
-                ),
-                SwitchListTile(
                   title: const Text('Rung thông báo'),
                   value: settings.vibrationEnabled,
-                  onChanged: (value) =>
-                      controller.setVibration(value),
+                  onChanged: (value) => controller.setVibration(value),
                 ),
                 const SizedBox(height: 16),
                 const Text(

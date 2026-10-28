@@ -20,12 +20,15 @@ class _InferenceRequest {
       this.outputShape,
       this.floor,
       this.iou,
-      this.letterbox);
+      this.letterbox,
+      this.minBrightness,
+      this.maxBrightness);
   final int address, rotation, size;
   final FrameData frame;
   final bool channelsFirst, letterbox;
   final List<int> outputShape;
   final double floor, iou;
+  final double minBrightness, maxBrightness;
 }
 
 class _InferenceResult {
@@ -43,23 +46,17 @@ _InferenceResult _infer(_InferenceRequest p) {
     isChannelsFirst: p.channelsFirst,
     useLetterbox: p.letterbox,
   );
-  
 
+  if (converted.meanBrightness < p.minBrightness ||
+      converted.meanBrightness > p.maxBrightness) {
+    return _InferenceResult(
+        const [], converted.meanBrightness, converted.contrastStdDev);
+  }
 
-  
-final interpreter = Interpreter.fromAddress(p.address);
+  final interpreter = Interpreter.fromAddress(p.address);
 
 // Đồng bộ trạng thái cấp phát tensor cho wrapper trong isolate.
-interpreter.allocateTensors();
-
-interpreter
-    .getInputTensor(0)
-    .setTo(converted.inputBuffer.buffer.asUint8List());
-
-interpreter.invoke();
-
-
-
+  interpreter.allocateTensors();
 
   interpreter
       .getInputTensor(0)
@@ -181,11 +178,13 @@ class MoneyDetector implements DetectorService {
         lowConfidenceFloor,
         iouThreshold,
         useLetterbox,
+        qualityService.minBrightness,
+        qualityService.maxBrightness,
       );
       final out = await Isolate.run(() => _infer(payload));
       debugPrint(
-      '[AI_PERF] Frame processing: '
-      '${clock.elapsedMilliseconds} ms',
+        '[AI_PERF] Frame processing: '
+        '${clock.elapsedMilliseconds} ms',
       );
       return _evaluateDetections(
         boxes: out.boxes,

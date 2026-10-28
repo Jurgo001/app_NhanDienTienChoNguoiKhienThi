@@ -1,11 +1,9 @@
 import 'package:app_ho_tro_nguoi_khiem_thi/core/constants/app_strings.dart';
-import 'package:app_ho_tro_nguoi_khiem_thi/models/denomination.dart';
 import 'package:app_ho_tro_nguoi_khiem_thi/screens/guide/guide_screen.dart';
 import 'package:app_ho_tro_nguoi_khiem_thi/screens/permission/camera_permission_screen.dart';
 import 'package:app_ho_tro_nguoi_khiem_thi/screens/recognition/recognition_screen.dart';
 import 'package:app_ho_tro_nguoi_khiem_thi/screens/settings/settings_screen.dart';
 import 'package:app_ho_tro_nguoi_khiem_thi/services/scan_backend.dart';
-import 'package:app_ho_tro_nguoi_khiem_thi/widgets/accessible_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'support/app_fakes.dart';
@@ -37,65 +35,40 @@ void main() {
     await unmount(tester);
   });
 
-  testWidgets('Frame → UI → TTS/rung; Đọc lại và Quét lại hoạt động',
+  testWidgets('Recognition screen has no manual replay or reset controls',
       (tester) async {
     final h = AppHarness();
     await h.mount(tester);
-    expect(
-        tester
-            .widget<AccessibleButton>(find.byKey(const Key('replay_button')))
-            .onPressed,
-        isNull);
-    await tapVisible(tester, find.byKey(const Key('scan_button')));
-    h.backend.recognize(Denomination.vnd50000);
-    await tester.pumpAndSettle();
-    expect(find.text('50.000 VNĐ'), findsOneWidget);
-    expect(find.text('Năm mươi nghìn đồng'), findsOneWidget);
-    expect(h.speech.spoken, ['Năm mươi nghìn đồng']);
-    expect(h.haptic.successes, 1);
-    await tapVisible(tester, find.byKey(const Key('replay_button')));
-    expect(h.speech.spoken, hasLength(2));
-    await tapVisible(tester, find.byKey(const Key('scan_button')));
-    expect(find.text('50.000 VNĐ'), findsNothing);
-    expect(find.text(AppStrings.scanningTitle), findsOneWidget);
-    expect(
-        tester
-            .widget<AccessibleButton>(find.byKey(const Key('replay_button')))
-            .onPressed,
-        isNull);
-    expect(tester.takeException(), isNull);
+    expect(find.byKey(const Key('replay_button')), findsNothing);
+    expect(find.byKey(const Key('scan_button')), findsNothing);
     await unmount(tester);
   });
 
-  testWidgets('Thay đổi nhanh cài đặt được lưu và còn sau khi tạo lại app',
+  testWidgets('Vibration and speech rate persist without an auto-read toggle',
       (tester) async {
     final h = AppHarness();
     await h.mount(tester);
     await tapVisible(tester, find.text(AppStrings.settingsTitle));
-    await tapVisible(tester, find.byKey(const Key('auto_read_switch')));
+    expect(find.byKey(const Key('auto_read_switch')), findsNothing);
     await tapVisible(tester, find.byKey(const Key('vibration_switch')));
     await tapVisible(tester, find.byKey(const Key('speech_rate_fast')));
     await unmount(tester);
     await h.mount(tester);
     await tapVisible(tester, find.text(AppStrings.settingsTitle));
     expect(
-        tester
-            .widget<Semantics>(find.byKey(const Key('auto_read_switch')))
-            .properties
-            .toggled,
-        isFalse);
+      tester
+          .widget<Semantics>(find.byKey(const Key('vibration_switch')))
+          .properties
+          .toggled,
+      isFalse,
+    );
     expect(
-        tester
-            .widget<Semantics>(find.byKey(const Key('vibration_switch')))
-            .properties
-            .toggled,
-        isFalse);
-    expect(
-        tester
-            .widget<Semantics>(find.byKey(const Key('speech_rate_fast')))
-            .properties
-            .selected,
-        isTrue);
+      tester
+          .widget<Semantics>(find.byKey(const Key('speech_rate_fast')))
+          .properties
+          .selected,
+      isTrue,
+    );
     await unmount(tester);
   });
 

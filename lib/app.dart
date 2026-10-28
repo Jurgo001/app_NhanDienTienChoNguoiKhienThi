@@ -75,6 +75,7 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp>
 
   Future<void> _initializeServices() async {
     final errors = <String>[];
+    var speechReady = false;
     try {
       await _settings.initialize();
     } catch (error) {
@@ -82,6 +83,7 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp>
     }
     try {
       await _speech.initialize();
+      speechReady = true;
     } catch (error) {
       errors.add('Giọng nói chưa sẵn sàng: ${_describeError(error)}');
     }
@@ -90,6 +92,7 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp>
       _initialized = true;
       _serviceNotice = errors.isEmpty ? null : errors.join('\n');
     });
+    if (speechReady) _start();
   }
 
   Future<void> _quietFeedback() async {
@@ -171,13 +174,8 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp>
                         return RecognitionScreen(
                           state: _recognition.state,
                           isMockBackend: _backend.isMock,
-                          isStarting: _session.busy,
                           serviceNotice: _serviceNotice,
                           onRetryServices: () => _run(_initializeServices()),
-                          onStartScanning: _start,
-                          onResetScan: _start,
-                          onReplayResult: () =>
-                              _run(_recognition.replayResult()),
                           onOpenSettings: () => _openSettings(routeContext),
                           onOpenGuide: () => _openGuide(routeContext),
                           onOpenPermission: () => _openPermission(routeContext),
@@ -198,11 +196,6 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp>
               builder: (_, child) => SettingsScreen(
                 settings: _settings.settings,
                 onOpenGuide: () => _openGuide(settingsContext),
-                onOpenPermission: () => _openPermission(settingsContext),
-                onAutoReadChanged: (value) {
-                  if (!value) unawaited(_quietFeedback());
-                  _run(_settings.setAutoRead(value));
-                },
                 onVibrationChanged: (value) =>
                     _run(_settings.setVibration(value)),
                 onSpeechRateChanged: (value) =>

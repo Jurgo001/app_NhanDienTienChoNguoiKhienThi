@@ -1,4 +1,11 @@
-enum RecognitionUiStatus { ready, scanning, recognized, unclear, error }
+enum RecognitionUiStatus {
+  ready,
+  scanning,
+  recognized,
+  lockedAnnounced,
+  unclear,
+  error,
+}
 
 class RecognitionUiState {
   const RecognitionUiState({
@@ -12,7 +19,8 @@ class RecognitionUiState {
   final String? denomination, spokenDenomination, guidance;
   final bool isMock;
   bool get hasResult =>
-      status == RecognitionUiStatus.recognized &&
+      (status == RecognitionUiStatus.recognized ||
+          status == RecognitionUiStatus.lockedAnnounced) &&
       denomination != null &&
       denomination!.isNotEmpty;
 }

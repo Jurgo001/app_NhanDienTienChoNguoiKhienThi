@@ -14,6 +14,7 @@ class RecognitionStatus extends StatelessWidget {
       RecognitionUiStatus.ready => AppStrings.readyTitle,
       RecognitionUiStatus.scanning => AppStrings.scanningTitle,
       RecognitionUiStatus.recognized => AppStrings.recognizedTitle,
+      RecognitionUiStatus.lockedAnnounced => AppStrings.recognizedTitle,
       RecognitionUiStatus.unclear => AppStrings.unclearTitle,
       RecognitionUiStatus.error => AppStrings.errorTitle,
     };
@@ -24,6 +25,9 @@ class RecognitionStatus extends StatelessWidget {
               ? AppStrings.scanningMessage
               : AppStrings.scanningRealMessage,
           RecognitionUiStatus.recognized => state.isMock
+              ? AppStrings.recognizedMessage
+              : AppStrings.recognizedRealMessage,
+          RecognitionUiStatus.lockedAnnounced => state.isMock
               ? AppStrings.recognizedMessage
               : AppStrings.recognizedRealMessage,
           RecognitionUiStatus.unclear => AppStrings.unclearMessage,

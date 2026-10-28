@@ -86,14 +86,14 @@ void main() {
     controller.dispose();
   });
 
-  test('Trạng thái ban đầu là ready', () {
+  test('Tráº¡ng thÃ¡i ban Ä‘áº§u lÃ  ready', () {
     expect(
       controller.state.status,
       RecognitionUiStatus.ready,
     );
   });
 
-  test('Chưa đủ 3 frame thì chưa xác nhận', () {
+  test('ChÆ°a Ä‘á»§ 3 frame thÃ¬ chÆ°a xÃ¡c nháº­n', () {
     controller.startScanning();
 
     controller.processDetection(result());
@@ -107,17 +107,17 @@ void main() {
     expect(speech.speakCount, 0);
   });
 
-  test('Đủ 3 frame thì xác nhận mệnh giá', () {
+  test('Äá»§ 3 frame thÃ¬ xÃ¡c nháº­n má»‡nh giÃ¡', () {
     controller.startScanning();
     sendStableFrames();
 
     expect(
       controller.state.status,
-      RecognitionUiStatus.recognized,
+      RecognitionUiStatus.lockedAnnounced,
     );
     expect(
       controller.state.denomination,
-      '100.000 VNĐ',
+      '100.000 VNÄ',
     );
     expect(
       speech.speakCount,
@@ -129,7 +129,7 @@ void main() {
     );
   });
 
-  test('Không tự đọc lặp trong cùng một phiên', () {
+  test('KhÃ´ng tá»± Ä‘á»c láº·p trong cÃ¹ng má»™t phiÃªn', () {
     controller.startScanning();
     sendStableFrames();
 
@@ -141,7 +141,7 @@ void main() {
     expect(haptic.successCount, 1);
   });
 
-  test('Confidence thấp không được xác nhận', () {
+  test('Confidence tháº¥p khÃ´ng Ä‘Æ°á»£c xÃ¡c nháº­n', () {
     controller.startScanning();
 
     for (var i = 0; i < 5; i++) {
@@ -154,10 +154,10 @@ void main() {
       controller.state.status,
       RecognitionUiStatus.scanning,
     );
-    expect(speech.lastSpokenText, 'Xin giữ yên tay');
+    expect(speech.lastSpokenText, 'Xin giá»¯ yÃªn tay');
   });
 
-  test('Đổi mệnh giá giữa các frame sẽ reset bộ đếm', () {
+  test('Äá»•i má»‡nh giÃ¡ giá»¯a cÃ¡c frame sáº½ reset bá»™ Ä‘áº¿m', () {
     controller.startScanning();
 
     controller.processDetection(result());
@@ -176,54 +176,11 @@ void main() {
 
     expect(
       controller.state.status,
-      RecognitionUiStatus.recognized,
+      RecognitionUiStatus.lockedAnnounced,
     );
   });
 
-  test('Đọc lại chỉ đọc kết quả hiện tại', () async {
-    controller.startScanning();
-    sendStableFrames();
-
-    await controller.replayResult();
-
-    expect(speech.speakCount, 2);
-    expect(
-      speech.lastSpokenText,
-      'Kết quả mô phỏng. Một trăm nghìn đồng',
-    );
-  });
-
-  test('Quét lại xóa kết quả và cho phép nhận diện mới', () async {
-    controller.startScanning();
-    sendStableFrames();
-
-    await controller.resetScan();
-
-    expect(
-      controller.state.status,
-      RecognitionUiStatus.scanning,
-    );
-    expect(controller.state.hasResult, false);
-    expect(speech.stopCount, 1);
-
-    sendStableFrames();
-
-    expect(speech.speakCount, 2);
-  });
-
-  test('Tắt tự động đọc thì không phát TTS', () {
-    settings = const AppSettings(
-      autoReadEnabled: false,
-    );
-
-    controller.startScanning();
-    sendStableFrames();
-
-    expect(speech.speakCount, 0);
-    expect(haptic.successCount, 1);
-  });
-
-  test('Tắt rung thì không rung', () {
+  test('Táº¯t rung thÃ¬ khÃ´ng rung', () {
     settings = const AppSettings(
       vibrationEnabled: false,
     );
@@ -235,12 +192,12 @@ void main() {
     expect(speech.speakCount, 1);
   });
 
-  test('Lỗi model chuyển sang trạng thái error', () {
+  test('Lá»—i model chuyá»ƒn sang tráº¡ng thÃ¡i error', () {
     controller.startScanning();
 
     controller.processDetection(
       DetectionResult.error(
-        'Không thể tải model',
+        'KhÃ´ng thá»ƒ táº£i model',
         isMock: true,
       ),
     );
@@ -250,11 +207,5 @@ void main() {
       RecognitionUiStatus.error,
     );
     expect(haptic.errorCount, 1);
-  });
-
-  test('Không có kết quả thì không đọc lại', () async {
-    await controller.replayResult();
-
-    expect(speech.speakCount, 0);
   });
 }

@@ -13,36 +13,28 @@ class RecognitionScreen extends StatelessWidget {
   const RecognitionScreen({
     super.key,
     required this.state,
-    required this.onStartScanning,
-    required this.onReplayResult,
-    required this.onResetScan,
     required this.onOpenSettings,
     required this.onOpenGuide,
     required this.onOpenPermission,
     this.cameraPreview,
     this.isMockBackend = true,
-    this.isStarting = false,
     this.serviceNotice,
     this.onRetryServices,
     this.debugControls,
   });
 
   final RecognitionUiState state;
-  final VoidCallback onStartScanning;
-  final VoidCallback onReplayResult;
-  final VoidCallback onResetScan;
   final VoidCallback onOpenSettings;
   final VoidCallback onOpenGuide;
   final VoidCallback onOpenPermission;
   final Widget? cameraPreview;
-  final bool isMockBackend, isStarting;
+  final bool isMockBackend;
   final String? serviceNotice;
   final VoidCallback? onRetryServices;
   final Widget? debugControls;
 
   @override
   Widget build(BuildContext context) {
-    final isReady = state.status == RecognitionUiStatus.ready;
     final emptyMessage = state.status == RecognitionUiStatus.scanning
         ? (state.isMock
             ? AppStrings.scanningNoResult
@@ -158,48 +150,7 @@ class RecognitionScreen extends StatelessWidget {
               child: Text(state.guidance!,
                   textAlign: TextAlign.center,
                   style: const TextStyle(color: Colors.white, fontSize: 18))),
-        if (state.hasResult) ...[
-          AccessibleButton(
-            key: const Key('replay_button'),
-            label: AppStrings.replay,
-            icon: Icons.volume_up_outlined,
-            onPressed: onReplayResult,
-          ),
-          TextButton(
-            key: const Key('scan_button'),
-            style: TextButton.styleFrom(foregroundColor: Colors.white),
-            onPressed: onResetScan,
-            child: const Text(AppStrings.scanAgain),
-          ),
-        ] else ...[
-          AccessibleButton(
-            key: const Key('scan_button'),
-            label: isStarting
-                ? 'Đang mở camera / mô hình…'
-                : isReady
-                    ? AppStrings.startScan
-                    : AppStrings.scanAgain,
-            icon: Icons.photo_camera_outlined,
-            onPressed: isStarting
-                ? null
-                : isReady
-                    ? onStartScanning
-                    : onResetScan,
-          ),
-          const SizedBox(height: 10),
-          AccessibleButton(
-            key: const Key('replay_button'),
-            label: AppStrings.replay,
-            icon: Icons.volume_up_outlined,
-            primary: false,
-            onPressed: null,
-          ),
-        ],
         const Spacer(),
-        if (state.hasResult)
-          const Text('Phiên mới sau 15 giây',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white70)),
         const SizedBox(height: 12),
         Wrap(
           alignment: WrapAlignment.spaceBetween,

@@ -11,14 +11,11 @@ class ScanSession extends ChangeNotifier {
     required this.backend,
     required this.recognition,
     this.beforeStart,
-    this.resultDuration = const Duration(seconds: 15),
   });
   final ScanBackend backend;
   final RecognitionController recognition;
-  final Duration resultDuration;
   final Future<void> Function()? beforeStart;
   Future<void>? _pending;
-  Timer? _resetTimer;
   int _generation = 0;
   bool _visible = true;
   bool _requested = false;
@@ -31,7 +28,6 @@ class ScanSession extends ChangeNotifier {
   Future<void> start() {
     if (_closed) return Future.value();
     _requested = true;
-    _resetTimer?.cancel();
     final token = ++_generation;
     recognition.startScanning(isMock: backend.isMock);
     return _begin(token);
@@ -51,6 +47,7 @@ class ScanSession extends ChangeNotifier {
             return;
           }
           await backend.start((result) => _receive(token, result));
+          if (_current(token)) recognition.announceScanningPrompt();
         } catch (error) {
           if (_current(token)) {
             recognition.showError('Không thể bắt đầu quét: $error',
@@ -64,31 +61,20 @@ class ScanSession extends ChangeNotifier {
       });
 
   void _receive(int token, DetectionResult result) {
-    if (!_current(token) ||
-        recognition.state.status != RecognitionUiStatus.scanning) return;
+    if (!_current(token)) return;
     recognition.processDetection(result);
     final status = recognition.state.status;
-    if (status != RecognitionUiStatus.recognized &&
-        status != RecognitionUiStatus.error) return;
+    if (status != RecognitionUiStatus.error) return;
     // Không await stop từ callback frame: stop phải đợi chính frame này kết thúc.
     unawaited(_enqueue(() async {
       await backend.stop();
       _notify();
     }));
-    if (status == RecognitionUiStatus.recognized) _scheduleReset();
-  }
-
-  void _scheduleReset() {
-    _resetTimer?.cancel();
-    _resetTimer = Timer(resultDuration, () {
-      if (!_closed && _visible && _requested) unawaited(start());
-    });
   }
 
   Future<void> setVisible(bool visible) {
     if (_closed || _visible == visible) return _pending ?? Future.value();
     _visible = visible;
-    _resetTimer?.cancel();
     final token = ++_generation;
     recognition.clearCandidate();
     if (!visible) {
@@ -98,10 +84,10 @@ class ScanSession extends ChangeNotifier {
       });
     }
     if (!_requested) return _pending ?? Future.value();
-    if (recognition.state.status == RecognitionUiStatus.scanning) {
+    if (recognition.state.status == RecognitionUiStatus.scanning ||
+        recognition.state.status == RecognitionUiStatus.lockedAnnounced) {
       return _begin(token);
     }
-    if (recognition.state.hasResult) _scheduleReset();
     return _pending ?? Future.value();
   }
 
@@ -124,7 +110,6 @@ class ScanSession extends ChangeNotifier {
     if (_closed) return _pending ?? Future.value();
     _closed = true;
     ++_generation;
-    _resetTimer?.cancel();
     return _enqueue(backend.dispose);
   }
 

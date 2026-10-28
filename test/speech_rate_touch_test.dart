@@ -29,10 +29,8 @@ void main() {
                 home: StatefulBuilder(
                   builder: (context, setState) => SettingsScreen(
                     settings: settings,
-                    onAutoReadChanged: (_) {},
                     onVibrationChanged: (_) {},
                     onOpenGuide: () {},
-                    onOpenPermission: () {},
                     onSpeechRateChanged: (rate) {
                       lastSelected = rate;
                       setState(() {

@@ -21,8 +21,6 @@ class SettingsController extends ChangeNotifier {
     }
   }
 
-  Future<void> setAutoRead(bool value) =>
-      _update(_settings.copyWith(autoReadEnabled: value));
   Future<void> setVibration(bool value) =>
       _update(_settings.copyWith(vibrationEnabled: value));
   Future<void> setSpeechRate(SpeechRateOption value) =>

@@ -1,9 +1,6 @@
 abstract final class AppStrings {
-  static const spokenGuide = 'Bước một. Đặt một tờ tiền trước camera sau. '
-      'Bước hai. Bấm Bắt đầu quét, cho phép camera và giữ yên điện thoại. '
-      'Bước ba. Nghe kết quả. Bấm Đọc lại khi cần. '
-      'Bấm Quét lại để nhận diện tờ khác, hoặc chờ phiên mới sau mười lăm giây. '
-      'Trên Chrome, kết quả chỉ là mô phỏng.';
+  static const spokenGuide =
+      'Ứng dụng tự động đọc mệnh giá. Đưa tờ tiền ra khỏi camera để quét tờ tiếp theo.';
   static const appTitle = 'Nhận diện tiền Việt Nam';
   static const recognitionTitle = 'Nhận diện mệnh giá';
   static const simulationBanner =
@@ -27,7 +24,7 @@ abstract final class AppStrings {
   static const recognizedTitle = 'Đã nhận diện';
   static const recognizedMessage =
       'Kết quả mô phỏng để thử giao diện và giọng đọc.';
-  static const recognizedRealMessage = 'Đã có kết quả. Chọn Đọc lại khi cần.';
+  static const recognizedRealMessage = 'Kết quả đã được tự động đọc.';
   static const unclearTitle = 'Chưa rõ';
   static const unclearMessage =
       'Chưa rõ mệnh giá. Đưa một tờ tiền vào giữa khung, đủ sáng và giữ yên.';
@@ -36,11 +33,6 @@ abstract final class AppStrings {
       'Không thể hoàn tất phiên quét mô phỏng. Hãy quét lại.';
   static const errorRealMessage =
       'Không thể hoàn tất phiên quét. Hãy quét lại.';
-  static const startScan = 'Bắt đầu quét';
-  static const scanAgain = 'Quét lại';
-  static const replay = 'Đọc lại';
-  static const replayMockNotice =
-      'Đọc lại đang mô phỏng. Thành viên 3 sẽ kết nối giọng nói thật.';
   static const scanMockNotice =
       'Đã bắt đầu phiên quét mô phỏng. Phản hồi giọng nói sẽ được kết nối sau.';
   static const resetMockNotice =
@@ -71,9 +63,6 @@ abstract final class AppStrings {
   static const continueWithoutCamera = 'Tiếp tục bản mô phỏng';
   static const settingsMockNotice =
       'Đây là cấu hình UI mô phỏng. Chưa kết nối TTS hoặc rung; thay đổi chỉ được giữ trong phiên chạy và không lưu sau khi đóng ứng dụng.';
-  static const autoRead = 'Tự động đọc kết quả';
-  static const autoReadDetail =
-      'Đọc mệnh giá và hướng dẫn bằng giọng tiếng Việt.';
   static const vibration = 'Rung phản hồi';
   static const vibrationDetail = 'Rung khi có kết quả hoặc lỗi nhận diện.';
   static const speechRate = 'Tốc độ giọng đọc';
@@ -81,19 +70,9 @@ abstract final class AppStrings {
   static const normal = 'Vừa';
   static const fast = 'Nhanh';
   static const guideHeading = 'Cách sử dụng';
-  static const guideStep1Title = 'Đưa tờ tiền vào khung';
-  static const guideStep1Detail = 'Chỉ đưa một tờ tiền vào giữa khung.';
-  static const guideStep2Title = 'Bắt đầu quét';
-  static const guideStep2Detail = 'Nhấn Bắt đầu quét và giữ yên điện thoại.';
-  static const guideStep3Title = 'Xem hoặc nghe kết quả';
   static const guideStep3Detail =
       'Mệnh giá được hiện và đọc theo cài đặt âm thanh.';
-  static const guideStep4Title = 'Đọc lại khi cần';
-  static const guideStep4Detail = 'Nút Đọc lại chỉ bật khi có kết quả.';
-  static const guideStep5Title = 'Quét tờ tiền khác';
-  static const guideStep5Detail = 'Nhấn Quét lại để xóa kết quả cũ.';
   static const listenGuide = 'Nghe hướng dẫn';
   static const listenGuideMockNotice =
       'Chưa phát âm thanh. Thành viên 3 sẽ kết nối chức năng nghe hướng dẫn.';
-  static const returnToRecognition = 'Về màn hình nhận diện';
 }

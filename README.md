@@ -59,9 +59,9 @@ $flutter = "D:\sdk_flutter\flutter\bin\flutter.bat"
 & $flutter run -d ID_DIEN_THOAI -t lib/main.dart
 ```
 
-Bấm **Bắt đầu quét**, cấp quyền trong hộp thoại Android, đưa một tờ tiền trước camera sau rồi giữ yên. Khi kết quả ổn định, ứng dụng đọc/rung theo cài đặt. **Đọc lại** đọc mệnh giá hiện tại. **Quét lại** xóa ngay kết quả cũ; hoặc chờ phiên mới sau **15 giây**.
+Khi mở màn hình nhận diện, ứng dụng tự xin quyền camera nếu cần, khởi chạy camera/mô hình và hướng dẫn đưa một tờ tiền vào khung. Khi kết quả ổn định, ứng dụng tự đọc mệnh giá một lần và rung nếu bật. Đưa tờ tiền ra khỏi camera để nhận diện lượt tiếp theo; cùng mệnh giá vẫn được đọc lại sau khi xác nhận tờ trước đã rời khung.
 
-Nếu đã chặn quyền: mở **Quyền camera → Mở cài đặt ứng dụng**, cấp lại quyền rồi quay về và bấm Quét lại. Màn quyền của ứng dụng giải thích và gọi API; các lựa chọn “Chỉ lần này/Trong khi sử dụng” do Android hiển thị.
+Nếu đã chặn quyền: mở **Quyền camera → Mở cài đặt ứng dụng**, cấp lại quyền rồi quay về màn hình nhận diện; camera sẽ tự khởi động lại.
 
 Nếu cần máy ảo: tạo **một** thiết bị trong Android Studio → Device Manager và mở nó trước khi chạy `devices`. Không cần ổ đĩa ảo R:/S:, không cần tạo hai máy ảo. Camera/giọng/rung trên máy ảo có thể khác điện thoại thật.
 
@@ -87,12 +87,12 @@ Trong terminal đang chạy `flutter run`: nhấn **q**. Nếu lệnh bị kẹt
 
 ## Cài đặt và khả năng tiếp cận
 
-- Tự động đọc kết quả, rung và tốc độ Chậm/Vừa/Nhanh được lưu qua SharedPreferences.
+- Ứng dụng luôn tự đọc kết quả và hướng dẫn bằng giọng nói. Chỉ cấu hình rung phản hồi và tốc độ đọc (Chậm/Vừa/Nhanh) được lưu qua SharedPreferences.
 - Ba tốc độ là **ba vùng chạm bằng nhau**, mỗi vùng cao tối thiểu 64 px; chạm được cả khoảng trống quanh chữ.
 - **Nghe hướng dẫn** dùng TTS thật với tốc độ đã chọn.
 - Khi mở màn phụ hoặc đưa ứng dụng xuống nền: dừng camera và phản hồi. Quay lại màn nhận diện sẽ tiếp tục phiên đang quét.
-- Kết quả từ phiên cũ bị bỏ qua sau Quét lại, chuyển màn hoặc chuyển nền.
-- Hướng dẫn thiếu sáng, quá gần/xa, nhiều tờ và giữ yên được hiển thị; hướng dẫn ổn định được đọc với khoảng cách tối thiểu 8 giây khi bật tự động đọc.
+- Kết quả từ phiên cũ bị bỏ qua sau khi chuyển màn hoặc chuyển ứng dụng xuống nền.
+- Hướng dẫn thiếu sáng, quá gần/xa, nhiều tờ và giữ yên được hiển thị; hướng dẫn ổn định được đọc với khoảng cách tối thiểu 3,5 giây khi bật tự động đọc.
 - Nếu thiếu giọng/engine, giao diện vẫn mở và cho thử lại âm thanh. Trên Android, vào **Cài đặt → Chuyển văn bản thành giọng nói** để cài giọng tiếng Việt; kiểm tra âm lượng phương tiện. Nhận diện được xử lý trên máy; tải giọng offline nếu cần dùng âm thanh không có mạng.
 
 ## Model và cấu trúc kết nối

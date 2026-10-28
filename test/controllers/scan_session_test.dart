@@ -35,7 +35,7 @@ void main() {
       recognition.dispose();
     });
 
-    test('Quét lại bỏ mọi kết quả muộn từ phiên trước', () async {
+    test('New session ignores callbacks from the previous session', () async {
       await session.start();
       final old = backend.callbacks.single;
       backend.recognize();
@@ -94,37 +94,16 @@ void main() {
     });
   });
 
-  testWidgets('Tự tạo phiên mới sau 15 giây, pause hủy timer', (tester) async {
-    final backend = TestBackend();
-    final recognition = RecognitionController(
-      speechService: TestSpeech(),
-      hapticService: TestHaptic(),
-      getSettings: () => const AppSettings(),
-    );
-    final session = ScanSession(backend: backend, recognition: recognition);
-    unawaited(session.start());
-    await tester.pump();
-    backend.recognize();
-    await tester.pump(const Duration(seconds: 14));
-    expect(recognition.state.hasResult, isTrue);
-    await tester.pump(const Duration(seconds: 1));
+  test('same denomination is announced again after four empty frames',
+      () async {
+    await session.start();
+    backend.recognize(Denomination.vnd50000);
+    expect(recognition.state.status, RecognitionUiStatus.lockedAnnounced);
+    for (var i = 0; i < RecognitionController.requiredEmptyFrames; i++) {
+      backend.emit(DetectionResult.empty(isMock: backend.isMock));
+    }
     expect(recognition.state.status, RecognitionUiStatus.scanning);
-    await tester.pumpAndSettle();
-    expect(backend.callbacks, hasLength(2));
-    backend.recognize();
-    unawaited(session.setVisible(false));
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 20));
-    expect(backend.callbacks, hasLength(2));
-    unawaited(session.setVisible(true));
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 15));
-    await tester.pumpAndSettle();
-    expect(backend.callbacks, hasLength(3));
-    unawaited(session.close());
-    await tester.pump();
-    expect(backend.disposals, 1);
-    session.dispose();
-    recognition.dispose();
+    backend.recognize(Denomination.vnd50000);
+    expect(recognition.state.status, RecognitionUiStatus.lockedAnnounced);
   });
 }

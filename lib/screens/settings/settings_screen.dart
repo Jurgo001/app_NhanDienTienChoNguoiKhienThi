@@ -10,19 +10,15 @@ class SettingsScreen extends StatelessWidget {
   const SettingsScreen({
     super.key,
     required this.settings,
-    required this.onAutoReadChanged,
     required this.onVibrationChanged,
     required this.onSpeechRateChanged,
     required this.onOpenGuide,
-    required this.onOpenPermission,
   });
 
   final AppSettings settings;
-  final ValueChanged<bool> onAutoReadChanged;
   final ValueChanged<bool> onVibrationChanged;
   final ValueChanged<SpeechRateOption> onSpeechRateChanged;
   final VoidCallback onOpenGuide;
-  final VoidCallback onOpenPermission;
 
   @override
   Widget build(BuildContext context) {
@@ -79,26 +75,9 @@ class SettingsScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 24),
-        Text(AppStrings.autoRead,
-            style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 10),
-        _switch(
-          key: const Key('auto_read_switch'),
-          label: AppStrings.autoRead,
-          value: settings.autoReadEnabled,
-          onChanged: onAutoReadChanged,
-        ),
-        const SizedBox(height: 24),
         const Text(
           'Thay đổi được lưu tự động và giữ lại khi mở ứng dụng.',
           style: TextStyle(color: AppColors.muted, height: 1.5),
-        ),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton(
-            onPressed: onOpenPermission,
-            child: const Text('Camera và quyền truy cập'),
-          ),
         ),
         const Spacer(),
       ],
