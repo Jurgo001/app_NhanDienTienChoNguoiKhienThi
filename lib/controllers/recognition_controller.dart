@@ -28,6 +28,7 @@ class RecognitionController extends ChangeNotifier {
   int _consecutiveFrames = 0, _guidanceFrames = 0, _emptyFrames = 0;
   DateTime? _lastGuidance;
   bool _disposed = false;
+  bool _resultSpeechInProgress = false;
   static const double minimumConfidence = 0.78;
   static const int requiredStableFrames = 3;
   static const int requiredEmptyFrames = 4;
@@ -44,15 +45,19 @@ class RecognitionController extends ChangeNotifier {
     _lastGuidance = null;
     _updateState(RecognitionUiState(
       status: RecognitionUiStatus.scanning,
-      guidance: 'Đưa một tờ tiền vào camera',
+      guidance: 'Hãy đưa một tờ tiền vào giữa camera và giữ yên.',
       isMock: isMock,
     ));
   }
 
   void announceScanningPrompt() {
-    if (_state.status != RecognitionUiStatus.scanning || _disposed) return;
+    if (_state.status != RecognitionUiStatus.scanning ||
+    _disposed ||
+    _resultSpeechInProgress) {
+  return;
+}
     _lastGuidance = DateTime.now();
-    final prompt = _state.guidance ?? 'Đưa một tờ tiền vào camera';
+    final prompt = _state.guidance ?? 'Hãy đưa một tờ tiền vào giữa camera và giữ yên.';
     _runFeedback(() => _speech.speak(prompt, rate: _getSettings().speechRate));
   }
 
@@ -114,6 +119,12 @@ class RecognitionController extends ChangeNotifier {
   }
 
   void _speakGuidance(DetectionStatus status, String message) {
+    if (status == DetectionStatus.noMoney) {
+    _guidanceCandidate = null;
+    _guidanceFrames = 0;
+    return;
+  }
+    if (_resultSpeechInProgress) return;
     if (_guidanceCandidate == status) {
       _guidanceFrames++;
     } else {
@@ -138,12 +149,20 @@ class RecognitionController extends ChangeNotifier {
     ));
     final settings = _getSettings();
     if (settings.vibrationEnabled) _runFeedback(_haptic.vibrateSuccess);
-    _runFeedback(() => _speech.speak(
-          isMock
-              ? 'Kết quả mô phỏng. ${denomination.spokenText}'
-              : denomination.spokenText,
-          rate: settings.speechRate,
-        ));
+_resultSpeechInProgress = true;
+
+_runFeedback(() async {
+  try {
+    await _speech.speak(
+      isMock
+          ? 'Kết quả mô phỏng. ${denomination.spokenText}'
+          : denomination.spokenText,
+      rate: settings.speechRate,
+    );
+  } finally {
+    _resultSpeechInProgress = false;
+  }
+});
   }
 
   void _beginNextTurn() {
@@ -152,7 +171,7 @@ class RecognitionController extends ChangeNotifier {
     _lastGuidance = null;
     _updateState(RecognitionUiState(
       status: RecognitionUiStatus.scanning,
-      guidance: 'Đưa một tờ tiền vào camera',
+      guidance: 'Hãy đưa một tờ tiền vào giữa camera và giữ yên.',
       isMock: isMock,
     ));
     announceScanningPrompt();

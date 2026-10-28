@@ -130,7 +130,7 @@ class DetectionResult {
   }) {
     return DetectionResult(
       status: DetectionStatus.noMoney,
-      message: 'Đưa một tờ tiền vào camera',
+      message: 'Hãy đưa một tờ tiền vào giữa camera và giữ yên.',
       inferenceTimeMs: inferenceTimeMs,
       brightness: brightness,
       isMock: isMock,

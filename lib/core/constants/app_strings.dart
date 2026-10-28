@@ -1,6 +1,16 @@
 abstract final class AppStrings {
   static const spokenGuide =
-      'Ứng dụng tự động đọc mệnh giá. Đưa tờ tiền ra khỏi camera để quét tờ tiếp theo.';
+    'Hướng dẫn sử dụng ứng dụng nhận diện tiền Việt Nam. '
+    'Bước một. Đưa tờ tiền. '
+    'Đặt một tờ tiền trước camera sau. '
+    'Bước hai. Giữ yên điện thoại. '
+    'Ứng dụng tự mở camera và nhận diện '
+    'khi camera cùng giọng nói đã sẵn sàng. '
+    'Bước ba. Nghe kết quả. '
+    'Ứng dụng tự động đọc mệnh giá. '
+    'Đưa tờ tiền ra khỏi camera để quét tờ tiếp theo. '
+    'Nếu chưa nghe rõ, hãy đưa tờ tiền ra '
+    'rồi đưa vào lại.';
   static const appTitle = 'Nhận diện tiền Việt Nam';
   static const recognitionTitle = 'Nhận diện mệnh giá';
   static const simulationBanner =

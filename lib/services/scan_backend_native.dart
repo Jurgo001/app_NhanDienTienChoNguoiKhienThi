@@ -20,6 +20,7 @@ class NativeScanBackend extends ScanBackend {
   DateTime? _classificationPauseUntil;
   DetectionStatus? _lastGuidanceStatus;
   int _sameGuidanceFrames = 0;
+  DateTime? _lastDebugPrint;
 
   @override
   bool get isMock => false;
@@ -63,6 +64,7 @@ class NativeScanBackend extends ScanBackend {
 
   @override
   Future<void> start(DetectionCallback onResult) async {
+    _lastDebugPrint = null;
     _classificationPauseUntil = null;
     _lastGuidanceStatus = null;
     _sameGuidanceFrames = 0;
@@ -82,9 +84,46 @@ class NativeScanBackend extends ScanBackend {
       final pausedUntil = _classificationPauseUntil;
       if (pausedUntil != null && DateTime.now().isBefore(pausedUntil)) return;
       try {
-        final result =
-            await detector.detectFrame(image, sensorOrientation: rotation);
-        onResult(result);
+       
+final result = await detector.detectFrame(
+  image,
+  sensorOrientation: rotation,
+);
+
+// DEBUG: Theo dõi kết quả YOLO mỗi 700ms.
+if (kDebugMode) {
+  final now = DateTime.now();
+
+  if (_lastDebugPrint == null ||
+      now.difference(_lastDebugPrint!) >=
+          const Duration(milliseconds: 700)) {
+    _lastDebugPrint = now;
+
+    final box =
+        result.boxes.isNotEmpty ? result.boxes.first : null;
+
+    final boxInfo = box == null
+        ? 'box=NONE'
+        : 'area=${box.areaRatio.toStringAsFixed(3)} '
+          'centerX=${box.centerX.toStringAsFixed(2)} '
+          'centerY=${box.centerY.toStringAsFixed(2)} '
+          'x1=${box.x1.toStringAsFixed(2)} '
+          'y1=${box.y1.toStringAsFixed(2)} '
+          'x2=${box.x2.toStringAsFixed(2)} '
+          'y2=${box.y2.toStringAsFixed(2)}';
+
+    debugPrint(
+      '[GUIDANCE_DEBUG] '
+      'status=${result.status.name} | '
+      'confidence=${result.confidence.toStringAsFixed(2)} | '
+      'boxes=${result.boxes.length} | '
+      '$boxInfo',
+    );
+  }
+}
+
+onResult(result);
+
         if (_needsCorrection(result.status)) {
           if (_lastGuidanceStatus == result.status) {
             _sameGuidanceFrames++;
