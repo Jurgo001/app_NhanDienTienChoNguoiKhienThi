@@ -24,7 +24,7 @@ class RecognitionController extends ChangeNotifier {
       const RecognitionUiState(status: RecognitionUiStatus.ready);
   RecognitionUiState get state => _state;
   Denomination? _candidate;
-  DetectionStatus? _guidanceCandidate;
+  String? _guidanceCandidate;
   int _consecutiveFrames = 0, _guidanceFrames = 0, _emptyFrames = 0;
   DateTime? _lastGuidance;
   bool _disposed = false;
@@ -52,12 +52,13 @@ class RecognitionController extends ChangeNotifier {
 
   void announceScanningPrompt() {
     if (_state.status != RecognitionUiStatus.scanning ||
-    _disposed ||
-    _resultSpeechInProgress) {
-  return;
-}
+        _disposed ||
+        _resultSpeechInProgress) {
+      return;
+    }
     _lastGuidance = DateTime.now();
-    final prompt = _state.guidance ?? 'Hãy đưa một tờ tiền vào giữa camera và giữ yên.';
+    final prompt =
+        _state.guidance ?? 'Hãy đưa một tờ tiền vào giữa camera và giữ yên.';
     _runFeedback(() => _speech.speak(prompt, rate: _getSettings().speechRate));
   }
 
@@ -119,24 +120,41 @@ class RecognitionController extends ChangeNotifier {
   }
 
   void _speakGuidance(DetectionStatus status, String message) {
+    // Không lặp lời nhắc khi camera không thấy tiền.
     if (status == DetectionStatus.noMoney) {
-    _guidanceCandidate = null;
-    _guidanceFrames = 0;
-    return;
-  }
-    if (_resultSpeechInProgress) return;
-    if (_guidanceCandidate == status) {
+      _guidanceCandidate = null;
+      _guidanceFrames = 0;
+      return;
+    }
+
+    // Chỉ cộng frame nếu nội dung hướng dẫn không thay đổi.
+    if (_guidanceCandidate == message) {
       _guidanceFrames++;
     } else {
-      _guidanceCandidate = status;
+      _guidanceCandidate = message;
       _guidanceFrames = 1;
     }
+
     final now = DateTime.now();
+
+    // Cần đủ 3 frame và không đọc cảnh báo quá thường xuyên.
     if (_guidanceFrames < 3 ||
         (_lastGuidance != null &&
-            now.difference(_lastGuidance!) < guidanceCooldown)) return;
+            now.difference(_lastGuidance!) < guidanceCooldown)) {
+      return;
+    }
+
     _lastGuidance = now;
-    _runFeedback(() => _speech.speak(message, rate: _getSettings().speechRate));
+
+    // Log để kiểm tra ứng dụng yêu cầu TTS đọc câu gì.
+    debugPrint('[GUIDANCE_TTS] $message');
+
+    _runFeedback(
+      () => _speech.speak(
+        message,
+        rate: _getSettings().speechRate,
+      ),
+    );
   }
 
   void _confirmResult(Denomination denomination, {required bool isMock}) {
@@ -149,20 +167,20 @@ class RecognitionController extends ChangeNotifier {
     ));
     final settings = _getSettings();
     if (settings.vibrationEnabled) _runFeedback(_haptic.vibrateSuccess);
-_resultSpeechInProgress = true;
+    _resultSpeechInProgress = true;
 
-_runFeedback(() async {
-  try {
-    await _speech.speak(
-      isMock
-          ? 'Kết quả mô phỏng. ${denomination.spokenText}'
-          : denomination.spokenText,
-      rate: settings.speechRate,
-    );
-  } finally {
-    _resultSpeechInProgress = false;
-  }
-});
+    _runFeedback(() async {
+      try {
+        await _speech.speak(
+          isMock
+              ? 'Kết quả mô phỏng. ${denomination.spokenText}'
+              : denomination.spokenText,
+          rate: settings.speechRate,
+        );
+      } finally {
+        _resultSpeechInProgress = false;
+      }
+    });
   }
 
   void _beginNextTurn() {

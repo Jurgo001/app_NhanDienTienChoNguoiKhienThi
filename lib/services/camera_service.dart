@@ -15,6 +15,12 @@ class CameraService {
   Future<void>? _frameInFlight;
   Future<void>? _lifecycle;
   bool _isStreaming = false;
+  // Lưu trạng thái đèn flash hiện tại.
+  bool _torchEnabled = false;
+
+  // Cho phép các lớp khác kiểm tra flash đang bật hay tắt.
+  bool get isTorchEnabled => _torchEnabled;
+
   bool _resumeCamera = false, _resumeStream = false;
   DateTime _lastFrameTime = DateTime.fromMillisecondsSinceEpoch(0);
   CameraController? get controller => _controller;
@@ -34,6 +40,51 @@ class CameraService {
             ? sensorOrientation + deviceAngle
             : sensorOrientation - deviceAngle + 360) %
         360;
+  }
+
+  /// Bật hoặc tắt đèn flash khi camera đang hoạt động.
+  /// Trả về true nếu thao tác thành công.
+  Future<bool> setTorchEnabled(bool enabled) async {
+    final camera = _controller;
+
+    // Camera chưa sẵn sàng thì không điều khiển flash.
+    if (camera == null || !camera.value.isInitialized) {
+      debugPrint('[FLASH] Camera chưa sẵn sàng');
+      return false;
+    }
+
+    // Tránh gọi lại nếu flash đã ở đúng trạng thái.
+    if (_torchEnabled == enabled) {
+      return true;
+    }
+
+    try {
+      await camera.setFlashMode(
+        enabled ? FlashMode.torch : FlashMode.off,
+      );
+
+      // Camera có thể đã bị đóng khi thao tác đang chạy.
+      if (!identical(_controller, camera)) {
+        return false;
+      }
+
+      _torchEnabled = enabled;
+
+      debugPrint(
+        enabled ? '[FLASH] Đã bật đèn flash' : '[FLASH] Đã tắt đèn flash',
+      );
+
+      return true;
+    } on CameraException catch (error) {
+      debugPrint(
+        '[FLASH] Không điều khiển được flash: '
+        '${error.code} - ${error.description}',
+      );
+      return false;
+    } catch (error) {
+      debugPrint('[FLASH] Lỗi flash: $error');
+      return false;
+    }
   }
 
   Future<bool> requestCameraPermission() async {
@@ -102,15 +153,26 @@ class CameraService {
     }
   }
 
+  /// Dừng luồng hình ảnh và tắt đèn flash nếu đang bật.
   Future<void> stopStream() async {
     _isStreaming = false;
+
     final camera = _controller;
+
     try {
       if (camera != null && camera.value.isStreamingImages) {
         await camera.stopImageStream();
       }
     } finally {
-      await _frameInFlight;
+      // Đợi frame đang xử lý hoàn thành.
+      try {
+        await _frameInFlight;
+      } finally {
+        // Không để flash tiếp tục sáng sau khi dừng quét.
+        if (_torchEnabled) {
+          await setTorchEnabled(false);
+        }
+      }
     }
   }
 
@@ -148,6 +210,10 @@ class CameraService {
     } finally {
       final old = _controller;
       _controller = null;
+
+      // Reset trạng thái khi controller bị giải phóng.
+      _torchEnabled = false;
+
       await old?.dispose();
     }
   }

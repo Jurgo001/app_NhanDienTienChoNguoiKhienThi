@@ -44,6 +44,32 @@ class ImageQualityService {
     }
     return null;
   }
+  
+  /// Hướng dẫn căn chỉnh ngang dựa trên bounding box YOLO.
+  /// Chỉ sử dụng box có độ tin cậy tương đối đáng tin cậy.
+  /// Các ngưỡng được chọn để thử nghiệm trên Samsung A15.
+  String? getHorizontalGuidance(BoundingBox box) {
+    const double leftThreshold = 0.30;
+    const double rightThreshold = 0.70;
+    const double minPositionConfidence = 0.55;
+
+    if (!box.centerX.isFinite ||
+        !box.confidence.isFinite ||
+        box.confidence < minPositionConfidence) {
+      return null;
+    }
+
+    if (box.centerX < leftThreshold) {
+      return 'Dịch tờ tiền sang phải một chút';
+    }
+
+    if (box.centerX > rightThreshold) {
+      return 'Dịch tờ tiền sang trái một chút';
+    }
+
+    return null;
+  }
+
 
   /// Trả về câu hướng dẫn hành động bằng tiếng Việt tương ứng với trạng thái.
   static String getGuidanceMessage(DetectionStatus status) {

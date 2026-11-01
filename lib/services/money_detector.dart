@@ -258,21 +258,32 @@ class MoneyDetector implements DetectorService {
       );
     }
 
-    if (bestBox.confidence < confidenceThreshold ||
-        bestBox.denomination == null) {
-      return DetectionResult(
-        denomination: bestBox.denomination,
-        side: bestBox.side,
-        confidence: bestBox.confidence,
-        boxes: [bestBox],
-        status: DetectionStatus.lowConfidence,
-        message: ImageQualityService.getGuidanceMessage(
+    
+if (bestBox.confidence < confidenceThreshold ||
+    bestBox.denomination == null) {
+
+  // Chỉ xác định hướng khi YOLO có phát hiện mệnh giá
+  // nhưng chưa đủ độ tin cậy để công nhận kết quả.
+  final String? positionGuidance =
+      bestBox.denomination != null
+          ? qualityService.getHorizontalGuidance(bestBox)
+          : null;
+
+  return DetectionResult(
+    denomination: bestBox.denomination,
+    side: bestBox.side,
+    confidence: bestBox.confidence,
+    boxes: [bestBox],
+    status: DetectionStatus.lowConfidence,
+    message: positionGuidance ??
+        ImageQualityService.getGuidanceMessage(
           DetectionStatus.lowConfidence,
         ),
-        inferenceTimeMs: inferenceTimeMs,
-        brightness: preprocessed.meanBrightness,
-      );
-    }
+    inferenceTimeMs: inferenceTimeMs,
+    brightness: preprocessed.meanBrightness,
+  );
+}
+
 
     return DetectionResult(
       denomination: bestBox.denomination,

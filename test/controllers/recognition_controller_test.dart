@@ -1,3 +1,4 @@
+
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:app_ho_tro_nguoi_khiem_thi/controllers/recognition_controller.dart';
@@ -8,6 +9,8 @@ import 'package:app_ho_tro_nguoi_khiem_thi/models/detection_result.dart';
 import 'package:app_ho_tro_nguoi_khiem_thi/services/haptic_service.dart';
 import 'package:app_ho_tro_nguoi_khiem_thi/services/speech_service.dart';
 
+// Giả lập TTS để kiểm tra số lần đọc.
+// Không cần phát âm thanh thật khi chạy unit test.
 class FakeSpeechService extends SpeechService {
   int speakCount = 0;
   int stopCount = 0;
@@ -28,6 +31,7 @@ class FakeSpeechService extends SpeechService {
   }
 }
 
+// Giả lập rung để kiểm tra phản hồi thành công hoặc lỗi.
 class FakeHapticService extends HapticService {
   int successCount = 0;
   int errorCount = 0;
@@ -52,6 +56,7 @@ void main() {
 
   AppSettings settings = const AppSettings();
 
+  // Tạo kết quả nhận diện giả lập để kiểm thử controller.
   DetectionResult result({
     Denomination denomination = Denomination.vnd100000,
     double confidence = 0.95,
@@ -64,14 +69,17 @@ void main() {
     );
   }
 
+  // Gửi 3 frame liên tiếp cùng một mệnh giá.
   void sendStableFrames() {
     for (var i = 0; i < 3; i++) {
       controller.processDetection(result());
     }
   }
 
+  // Khởi tạo lại controller và các dịch vụ giả trước mỗi test.
   setUp(() {
     settings = const AppSettings();
+
     speech = FakeSpeechService();
     haptic = FakeHapticService();
 
@@ -82,18 +90,21 @@ void main() {
     );
   });
 
+  // Giải phóng controller sau mỗi test.
   tearDown(() {
     controller.dispose();
   });
 
-  test('Tráº¡ng thÃ¡i ban Ä‘áº§u lÃ  ready', () {
+  // TEST 1: Trạng thái ban đầu.
+  test('Trạng thái ban đầu là ready', () {
     expect(
       controller.state.status,
       RecognitionUiStatus.ready,
     );
   });
 
-  test('ChÆ°a Ä‘á»§ 3 frame thÃ¬ chÆ°a xÃ¡c nháº­n', () {
+  // TEST 2: Chưa đủ 3 frame thì chưa công nhận mệnh giá.
+  test('Chưa đủ 3 frame thì chưa xác nhận', () {
     controller.startScanning();
 
     controller.processDetection(result());
@@ -105,48 +116,64 @@ void main() {
     );
 
     expect(speech.speakCount, 0);
+    expect(haptic.successCount, 0);
   });
 
-  test('Äá»§ 3 frame thÃ¬ xÃ¡c nháº­n má»‡nh giÃ¡', () {
+  // TEST 3: Đủ 3 frame thì xác nhận và đọc mệnh giá.
+  test('Đủ 3 frame thì xác nhận mệnh giá', () {
     controller.startScanning();
+
     sendStableFrames();
 
     expect(
       controller.state.status,
       RecognitionUiStatus.lockedAnnounced,
     );
+
+    // Dùng giá trị từ enum để tránh sai định dạng tiền.
     expect(
       controller.state.denomination,
-      '100.000 VNÄ',
+      Denomination.vnd100000.displayText,
     );
+
     expect(
       speech.speakCount,
       1,
     );
+
     expect(
       haptic.successCount,
       1,
     );
   });
 
-  test('KhÃ´ng tá»± Ä‘á»c láº·p trong cÃ¹ng má»™t phiÃªn', () {
+  // TEST 4: Khi đã khóa kết quả, không đọc lặp cùng một tờ.
+  test('Không tự đọc lặp trong cùng một phiên', () {
     controller.startScanning();
+
     sendStableFrames();
 
+    // Camera vẫn nhìn thấy tờ tiền trong 5 frame tiếp theo.
     for (var i = 0; i < 5; i++) {
       controller.processDetection(result());
     }
+
+    expect(
+      controller.state.status,
+      RecognitionUiStatus.lockedAnnounced,
+    );
 
     expect(speech.speakCount, 1);
     expect(haptic.successCount, 1);
   });
 
-  test('Confidence tháº¥p khÃ´ng Ä‘Æ°á»£c xÃ¡c nháº­n', () {
+  // TEST 5: Confidence thấp không được xác nhận.
+  test('Confidence thấp không được xác nhận', () {
     controller.startScanning();
 
     for (var i = 0; i < 5; i++) {
       controller.processDetection(
-        result(confidence: 0.4),
+        result(confidence: 0.40),
       );
     }
 
@@ -154,18 +181,28 @@ void main() {
       controller.state.status,
       RecognitionUiStatus.scanning,
     );
-    expect(speech.lastSpokenText, 'Xin giá»¯ yÃªn tay');
+
+    expect(
+      speech.lastSpokenText,
+      'Xin giữ yên tay',
+    );
   });
 
-  test('Äá»•i má»‡nh giÃ¡ giá»¯a cÃ¡c frame sáº½ reset bá»™ Ä‘áº¿m', () {
+  // TEST 6: Đổi mệnh giá giữa các frame phải đếm lại từ đầu.
+  test('Đổi mệnh giá giữa các frame sẽ reset bộ đếm', () {
     controller.startScanning();
 
     controller.processDetection(result());
+
     controller.processDetection(
-      result(denomination: Denomination.vnd200000),
+      result(
+        denomination: Denomination.vnd200000,
+      ),
     );
+
     controller.processDetection(result());
 
+    // Chưa đủ 3 frame liên tiếp của 100.000đ.
     expect(
       controller.state.status,
       RecognitionUiStatus.scanning,
@@ -178,9 +215,17 @@ void main() {
       controller.state.status,
       RecognitionUiStatus.lockedAnnounced,
     );
+
+    expect(
+      controller.state.denomination,
+      Denomination.vnd100000.displayText,
+    );
+
+    expect(speech.speakCount, 1);
   });
 
-  test('Táº¯t rung thÃ¬ khÃ´ng rung', () {
+  // TEST 7: Khi người dùng tắt rung thì không rung.
+  test('Tắt rung thì không rung', () {
     settings = const AppSettings(
       vibrationEnabled: false,
     );
@@ -192,12 +237,13 @@ void main() {
     expect(speech.speakCount, 1);
   });
 
-  test('Lá»—i model chuyá»ƒn sang tráº¡ng thÃ¡i error', () {
+  // TEST 8: Lỗi model phải chuyển sang trạng thái error.
+  test('Lỗi model chuyển sang trạng thái error', () {
     controller.startScanning();
 
     controller.processDetection(
       DetectionResult.error(
-        'KhÃ´ng thá»ƒ táº£i model',
+        'Không thể tải model',
         isMock: true,
       ),
     );
@@ -206,6 +252,30 @@ void main() {
       controller.state.status,
       RecognitionUiStatus.error,
     );
+
     expect(haptic.errorCount, 1);
+    expect(speech.speakCount, 0);
+  });
+
+  // TEST 9: Không đọc lặp khi camera chưa phát hiện tiền.
+  test('Không đọc lặp khi không phát hiện tiền', () {
+    controller.startScanning();
+
+    // Mô phỏng camera xử lý 15 frame không nhìn thấy tiền.
+    for (var i = 0; i < 15; i++) {
+      controller.processDetection(
+        DetectionResult.empty(isMock: true),
+      );
+    }
+
+    expect(
+      controller.state.status,
+      RecognitionUiStatus.scanning,
+    );
+
+    // startScanning() chỉ đổi trạng thái.
+    // Trong ứng dụng thật, ScanSession sẽ gọi lời nhắc đầu lượt.
+    // Các frame noMoney không được tạo thêm lời đọc.
+    expect(speech.speakCount, 0);
   });
 }
