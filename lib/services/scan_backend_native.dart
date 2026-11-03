@@ -247,19 +247,54 @@ if (pausedUntil != null &&
 
 // Nếu flash đang bật và ảnh vẫn quá sáng,
 // diễn đạt rõ vấn đề để người dùng dễ điều chỉnh.
-        final effectiveResult =
-            camera.isTorchEnabled && result.status == DetectionStatus.tooBright
-                ? DetectionResult(
-                    status: DetectionStatus.tooBright,
-                    message: 'Đèn flash làm ảnh quá sáng. '
-                        'Hãy đưa tờ tiền ra xa hoặc nghiêng nhẹ.',
-                    brightness: result.brightness,
-                    inferenceTimeMs: result.inferenceTimeMs,
-                    isMock: result.isMock,
-                  )
-                : result;
+        
+        // Điều chỉnh thông báo dựa trên trạng thái đèn flash.
+        // Tránh yêu cầu người dùng bật đèn khi flash đã tự bật.
+        DetectionResult effectiveResult = result;
+
+        if (result.status == DetectionStatus.tooDark) {
+          String message;
+
+          if (camera.isTorchEnabled) {
+            // Flash đã bật nhưng ảnh camera vẫn chưa đủ sáng.
+            message =
+                'Ánh sáng vẫn yếu dù đèn flash đã bật. '
+                'Vui lòng điều chỉnh hướng camera.';
+          } else if (_flashAttempted) {
+            // Đã thử bật flash nhưng chưa thành công.
+            message =
+                'Không bật được đèn flash. '
+                'Vui lòng di chuyển đến nơi sáng hơn.';
+          } else {
+            // Camera thấy tối nhưng hệ thống chưa bật flash.
+            message =
+                'Ánh sáng chưa đủ để nhận diện. '
+                'Hãy đưa tờ tiền vào vùng sáng hơn.';
+          }
+
+          effectiveResult = DetectionResult(
+            status: DetectionStatus.tooDark,
+            message: message,
+            brightness: result.brightness,
+            inferenceTimeMs: result.inferenceTimeMs,
+            isMock: result.isMock,
+          );
+        } else if (camera.isTorchEnabled &&
+            result.status == DetectionStatus.tooBright) {
+          // Flash gây chói thì hướng dẫn điều chỉnh tờ tiền.
+          effectiveResult = DetectionResult(
+            status: DetectionStatus.tooBright,
+            message:
+                'Đèn flash làm ảnh quá sáng. '
+                'Hãy đưa tờ tiền ra xa hoặc nghiêng nhẹ.',
+            brightness: result.brightness,
+            inferenceTimeMs: result.inferenceTimeMs,
+            isMock: result.isMock,
+          );
+        }
 
         onResult(effectiveResult);
+
 
         // 5. Giữ nguyên cơ chế tạm nghỉ sau các cảnh báo.
         if (_needsCorrection(result.status)) {
@@ -358,9 +393,15 @@ if (pausedUntil != null &&
 
             if (success) {
               debugPrint(
+                
                 '[AUTO_FLASH] Phòng đủ sáng ($lux lx), '
                 'tự tắt flash',
               );
+
+              onFlashAnnouncement?.call(
+                'Ánh sáng đã đủ. Đèn flash đã tự tắt.',
+              );
+
 
               _luxBrightSince = null;
               _torchStartedAt = null;
@@ -421,11 +462,19 @@ if (pausedUntil != null &&
               '[AUTO_FLASH] Phòng tối ($lux lx), tự bật flash',
             );
 
+            onFlashAnnouncement?.call(
+              'Ánh sáng yếu. Đèn flash đã tự bật.',
+            );
+
+
             // Bỏ qua kết quả cũ để xử lý frame có flash.
             return true;
           }
 
           debugPrint('[AUTO_FLASH] Không bật được flash');
+          onFlashAnnouncement?.call(
+            'Không bật được đèn flash. Vui lòng di chuyển đến nơi sáng hơn.',
+          );
         }
       } else {
         _consecutiveDarkFrames = 0;
@@ -479,6 +528,9 @@ if (pausedUntil != null &&
         _classificationPauseUntil = null;
 
         debugPrint('[AUTO_FLASH] Đủ sáng, flash tự tắt');
+        onFlashAnnouncement?.call(
+          'Ánh sáng đã đủ. Đèn flash đã tự tắt.',
+        );
         return true;
       }
 
@@ -562,6 +614,10 @@ if (pausedUntil != null &&
           );
 
           debugPrint('[AUTO_FLASH] Thiếu sáng, tự bật flash');
+
+          onFlashAnnouncement?.call(
+            'Ánh sáng yếu. Đèn flash đã tự bật.',
+          );
           return true;
         }
 
@@ -569,7 +625,14 @@ if (pausedUntil != null &&
           '[AUTO_FLASH] Không bật được flash, '
           'tiếp tục hướng dẫn người dùng',
         );
+
+        // Thông báo bằng giọng nói khi không bật được flash.
+          onFlashAnnouncement?.call(
+            'Không bật được đèn flash. '
+            'Vui lòng di chuyển đến nơi sáng hơn.',
+          );
       }
+
     } else {
       _consecutiveDarkFrames = 0;
     }

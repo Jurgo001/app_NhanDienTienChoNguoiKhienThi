@@ -61,6 +61,36 @@ class RecognitionController extends ChangeNotifier {
         _state.guidance ?? 'Hãy đưa một tờ tiền vào giữa camera và giữ yên.';
     _runFeedback(() => _speech.speak(prompt, rate: _getSettings().speechRate));
   }
+  
+  // Đọc thông báo khi flash tự bật hoặc tự tắt.
+  // Sử dụng SpeechService hiện có để giữ chung cấu hình giọng nói.
+  void announceFlashStatus(String message) {
+    // Không đọc nếu controller đã đóng.
+    // Không chen ngang lúc đang thông báo mệnh giá tiền.
+    if (_disposed ||
+        _state.status != RecognitionUiStatus.scanning ||
+        _resultSpeechInProgress) {
+      return;
+    }
+
+    // Tạm ngăn lời nhắc camera đọc đè ngay sau thông báo flash.
+    _lastGuidance = DateTime.now();
+
+    // Reset bộ đếm để không phát lại lời nhắc từ các frame trước.
+    _guidanceCandidate = null;
+    _guidanceFrames = 0;
+
+    debugPrint('[FLASH_TTS] $message');
+
+    // Dùng tốc độ đọc mà người dùng đã chọn trong cài đặt.
+    _runFeedback(
+      () => _speech.speak(
+        message,
+        rate: _getSettings().speechRate,
+      ),
+    );
+  }
+
 
   void processDetection(DetectionResult result) {
     if (_disposed) return;

@@ -65,6 +65,11 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp>
               'Phản hồi âm thanh/rung: ${_describeError(error)}');
       },
     );
+
+        // Khi backend thông báo flash, Controller sẽ phát giọng nói.
+    _backend.onFlashAnnouncement = _recognition.announceFlashStatus;
+
+
     _session = ScanSession(
       backend: _backend,
       recognition: _recognition,
@@ -143,6 +148,9 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+
+    _backend.onFlashAnnouncement = null;
+    
     _session.dispose(); // token hết hiệu lực trước khi controller bị dispose
     _recognition.dispose();
     _settings.dispose();

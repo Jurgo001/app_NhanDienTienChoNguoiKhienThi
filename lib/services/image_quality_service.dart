@@ -87,7 +87,8 @@ class ImageQualityService {
       case DetectionStatus.tooFar:
         return 'Đưa máy lại gần hơn';
       case DetectionStatus.tooDark:
-        return 'Môi trường quá tối, vui lòng bật thêm đèn';
+        return 'Ánh sáng chưa đủ để nhận diện. '
+      'Vui lòng đưa tờ tiền vào vùng sáng hơn.';
       case DetectionStatus.tooBright:
         return 'Ảnh bị chói sáng, vui lòng nghiêng nhẹ tờ tiền';
       case DetectionStatus.skippedBusy:
