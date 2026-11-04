@@ -1,4 +1,3 @@
-
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:app_ho_tro_nguoi_khiem_thi/controllers/recognition_controller.dart';
@@ -20,6 +19,7 @@ class FakeSpeechService extends SpeechService {
   Future<void> speak(
     String text, {
     SpeechRateOption rate = SpeechRateOption.normal,
+    SpeechPriority priority = SpeechPriority.instruction,
   }) async {
     speakCount++;
     lastSpokenText = text;

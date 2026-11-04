@@ -24,4 +24,7 @@ abstract class DetectorService {
 
   /// Giải phóng bộ nhớ Interpreter khi đóng màn hình hoặc thoát ứng dụng.
   Future<void> dispose();
+
+  /// Release model/worker memory after a long pause while allowing reinitialize.
+  Future<void> releaseResources() async {}
 }

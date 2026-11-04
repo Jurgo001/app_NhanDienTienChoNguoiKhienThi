@@ -211,4 +211,7 @@ class MockMoneyDetector implements DetectorService {
     _isInitialized = false;
     _isBusy = false;
   }
+
+  @override
+  Future<void> releaseResources() => dispose();
 }

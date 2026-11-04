@@ -3,6 +3,7 @@ import 'package:camera/camera.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'camera_capabilities.dart';
 
 typedef FrameCallback = Future<void> Function(CameraImage image, int rotation);
 
@@ -17,12 +18,28 @@ class CameraService {
   bool _isStreaming = false;
   // Lưu trạng thái đèn flash hiện tại.
   bool _torchEnabled = false;
+  bool _supportsTorch = false;
+  bool get supportsTorch => _supportsTorch;
+  void markTorchUnavailable() {
+    _supportsTorch = false;
+    _torchEnabled = false;
+  }
 
   // Cho phép các lớp khác kiểm tra flash đang bật hay tắt.
   bool get isTorchEnabled => _torchEnabled;
 
   bool _resumeCamera = false, _resumeStream = false;
-  DateTime _lastFrameTime = DateTime.fromMillisecondsSinceEpoch(0);
+  final _frameClock = Stopwatch();
+  int _lastFrameStartUs = 0;
+  late int _frameIntervalMs = minFrameIntervalMs;
+
+  int get frameIntervalMs => _frameIntervalMs;
+  void setFrameIntervalMs(int value) {
+    if (value <= 0)
+      throw ArgumentError.value(value, 'value', 'Must be positive.');
+    _frameIntervalMs = value;
+  }
+
   CameraController? get controller => _controller;
   bool get isInitialized => _controller?.value.isInitialized ?? false;
   bool get isStreaming => _isStreaming;
@@ -45,6 +62,7 @@ class CameraService {
   /// Bật hoặc tắt đèn flash khi camera đang hoạt động.
   /// Trả về true nếu thao tác thành công.
   Future<bool> setTorchEnabled(bool enabled) async {
+    if (enabled && !_supportsTorch) return false;
     final camera = _controller;
 
     // Camera chưa sẵn sàng thì không điều khiển flash.
@@ -76,6 +94,8 @@ class CameraService {
 
       return true;
     } on CameraException catch (error) {
+      if (CameraCapabilities.isTorchUnavailableError(error.toString()))
+        markTorchUnavailable();
       debugPrint(
         '[FLASH] Không điều khiển được flash: '
         '${error.code} - ${error.description}',
@@ -107,6 +127,7 @@ class CameraService {
       (cam) => cam.lensDirection == CameraLensDirection.back,
       orElse: () => cameras.first,
     );
+    _supportsTorch = await CameraCapabilities.supportsTorch(_backCamera!.name);
     final next = CameraController(
       _backCamera!,
       resolution,
@@ -129,16 +150,19 @@ class CameraService {
     }
     if (_isStreaming) return;
     _onFrameCallback = onFrame;
-    _lastFrameTime = DateTime.fromMillisecondsSinceEpoch(0);
+    _frameClock
+      ..reset()
+      ..start();
+    _lastFrameStartUs = -minFrameIntervalMs * 1000;
+    _frameIntervalMs = minFrameIntervalMs;
     _isStreaming = true;
     try {
       await camera.startImageStream((image) {
-        final now = DateTime.now();
+        final nowUs = _frameClock.elapsedMicroseconds;
         if (!_isStreaming ||
             _frameInFlight != null ||
-            now.difference(_lastFrameTime).inMilliseconds < minFrameIntervalMs)
-          return;
-        _lastFrameTime = now;
+            nowUs - _lastFrameStartUs < _frameIntervalMs * 1000) return;
+        _lastFrameStartUs = nowUs;
         // Future.sync bắt cả lỗi đồng bộ và bất đồng bộ từ callback.
         _frameInFlight = Future.sync(() => onFrame(image, frameRotation))
             .catchError((Object error, StackTrace stack) {
@@ -156,6 +180,7 @@ class CameraService {
   /// Dừng luồng hình ảnh và tắt đèn flash nếu đang bật.
   Future<void> stopStream() async {
     _isStreaming = false;
+    _frameClock.stop();
 
     final camera = _controller;
 

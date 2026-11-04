@@ -3,8 +3,10 @@ import 'package:flutter/foundation.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../models/detection_result.dart';
 import 'camera_service.dart';
+import 'camera_capabilities.dart';
 import 'detector_service.dart';
 import 'money_detector.dart';
+import 'frame_pacing.dart';
 import 'scan_backend.dart';
 
 import 'dart:async';
@@ -13,16 +15,31 @@ import 'package:light_sensor/light_sensor.dart';
 ScanBackend createScanBackend() => NativeScanBackend();
 
 class NativeScanBackend extends ScanBackend {
-  NativeScanBackend({CameraService? camera, DetectorService? detector})
+  NativeScanBackend(
+      {CameraService? camera,
+      DetectorService? detector,
+      this.modelIdleTimeout = const Duration(seconds: 15)})
       : camera = camera ?? CameraService(),
         detector = detector ?? MoneyDetector();
   final CameraService camera;
   final DetectorService detector;
+  final Duration modelIdleTimeout;
+  Timer? _idleReleaseTimer;
+  Future<void> _idleRelease = Future.value();
+  late final _framePacing =
+      FramePacing(activeIntervalMs: camera.minFrameIntervalMs);
+  bool _recognitionLocked = false;
+
+  @override
+  void setRecognitionLocked(bool locked) {
+    _recognitionLocked = locked;
+    _framePacing.setLocked(locked);
+    camera.setFrameIntervalMs(_framePacing.intervalMs);
+  }
+
   CameraController? _listenedCamera;
   VoidCallback? _errorListener;
   DateTime? _classificationPauseUntil;
-  DetectionStatus? _lastGuidanceStatus;
-  int _sameGuidanceFrames = 0;
 
   // Đếm số frame liên tiếp bị thiếu sáng.
   int _consecutiveDarkFrames = 0;
@@ -41,12 +58,11 @@ class NativeScanBackend extends ScanBackend {
   DateTime? _lastDebugPrint;
 
   // Dùng camera để kiểm tra ánh sáng nếu Lux không đủ hữu ích.
-bool _useCameraLightFallback = false;
+  bool _useCameraLightFallback = false;
   // Theo dõi dữ liệu từ cảm biến ánh sáng môi trường.
   StreamSubscription<int>? _luxSubscription;
 
   int? _currentLux;
-  
 
 // Đếm thời gian ánh sáng môi trường đủ sáng để tắt flash.
   DateTime? _luxBrightSince;
@@ -84,6 +100,9 @@ bool _useCameraLightFallback = false;
 
   @override
   Future<void> initialize() async {
+    _idleReleaseTimer?.cancel();
+    _idleReleaseTimer = null;
+    await _idleRelease;
     final access = await permission(request: true);
     if (access != CameraAccess.granted) {
       throw StateError(access == CameraAccess.permanentlyDenied
@@ -95,20 +114,18 @@ bool _useCameraLightFallback = false;
   }
 
   @override
-  @override
   Future<void> start(DetectionCallback onResult) async {
     _useCameraLightFallback = false;
+    _framePacing.reset(locked: _recognitionLocked);
     // Reset trạng thái khi bắt đầu phiên quét mới.
     _lastDebugPrint = null;
     _classificationPauseUntil = null;
-    _lastGuidanceStatus = null;
-    _sameGuidanceFrames = 0;
 
     // Reset bộ đếm thiếu sáng và trạng thái tự bật flash.
     _consecutiveDarkFrames = 0;
     _flashAttempted = false;
 
-    _currentLux = null; 
+    _currentLux = null;
     _luxBrightSince = null;
     _torchStartedAt = null;
 
@@ -117,22 +134,22 @@ bool _useCameraLightFallback = false;
     _luxSubscription = null;
 
     try {
-      final hasSensor = await LightSensor.hasSensor();
+      final hasSensor = camera.supportsTorch && await LightSensor.hasSensor();
 
       debugPrint('[LUX] Có cảm biến ánh sáng: $hasSensor');
 
       if (hasSensor) {
-        _luxSubscription = LightSensor.luxStream().listen(
+        _luxSubscription = LightSensor.luxStream().distinct().listen(
           (lux) {
             if (lux < 0) return;
 
             _currentLux = lux;
 
-            // Tạm thời in từng giá trị để kiểm tra cảm biến.
-            debugPrint(
-              '[LUX_TEST] lux=$lux | '
-              'torch=${camera.isTorchEnabled}',
-            );
+            if (kDebugMode)
+              debugPrint(
+                '[LUX_TEST] lux=$lux | '
+                'torch=${camera.isTorchEnabled}',
+              );
           },
           onError: (Object error) {
             debugPrint('[LUX_ERROR] $error');
@@ -160,6 +177,11 @@ bool _useCameraLightFallback = false;
 
       _errorListener = () {
         if (controller.value.hasError) {
+          if (CameraCapabilities.isTorchUnavailableError(
+              controller.value.errorDescription ?? '')) {
+            camera.markTorchUnavailable();
+            return;
+          }
           onResult(
             DetectionResult.error(
               controller.value.errorDescription ??
@@ -173,32 +195,31 @@ bool _useCameraLightFallback = false;
     }
 
     // Bắt đầu nhận và xử lý từng frame từ camera.
-    
-await camera.startStream((image, rotation) async {
-final pausedUntil = _classificationPauseUntil;
-final now = DateTime.now();
 
-final needLightingCheck = camera.isTorchEnabled &&
-    (_useCameraLightFallback ||
-        _lightProbeActive ||
-        (_currentLux != null && _currentLux! >= 100));
+    await camera.startStream((image, rotation) async {
+      final pausedUntil = _classificationPauseUntil;
+      final now = DateTime.now();
 
-if (pausedUntil != null &&
-    now.isBefore(pausedUntil) &&
-    !needLightingCheck) {
-  return;
-}
+      final needLightingCheck = camera.isTorchEnabled &&
+          (_useCameraLightFallback ||
+              _lightProbeActive ||
+              (_currentLux != null && _currentLux! >= 100));
 
-  try {
-    // Phần nhận diện YOLO hiện tại của bạn.
-    final result = await detector.detectFrame(
-      image,
-      sensorOrientation: rotation,
-    );
+      if (pausedUntil != null &&
+          now.isBefore(pausedUntil) &&
+          !needLightingCheck) {
+        return;
+      }
 
-    // Giữ nguyên GUIDANCE_DEBUG,
-    // FLASH_CHECK, AUTO_FLASH và code phía dưới.
+      try {
+        // Phần nhận diện YOLO hiện tại của bạn.
+        final result = await detector.detectFrame(
+          image,
+          sensorOrientation: rotation,
+        );
 
+        // Giữ nguyên GUIDANCE_DEBUG,
+        // FLASH_CHECK, AUTO_FLASH và code phía dưới.
 
         // 2. DEBUG: Theo dõi kết quả YOLO mỗi 700ms.
         if (kDebugMode) {
@@ -234,20 +255,17 @@ if (pausedUntil != null &&
         // 3. AUTO FLASH: Kiểm tra môi trường thiếu sáng.
         // Điều khiển tự bật/tắt flash theo độ sáng.
 // Debug tạm thời: kiểm tra dữ liệu đưa vào Auto Flash.
-        debugPrint(
-          '[FLASH_CHECK] lux=$_currentLux | '
-          'torch=${camera.isTorchEnabled} | '
-          'status=${result.status.name}',
-        );
+        // Per-frame debug logging is intentionally avoided here.
         final skipResult = await _handleAutoFlash(result);
 
         if (skipResult) {
+          camera.setFrameIntervalMs(camera.minFrameIntervalMs);
           return;
         }
 
 // Nếu flash đang bật và ảnh vẫn quá sáng,
 // diễn đạt rõ vấn đề để người dùng dễ điều chỉnh.
-        
+
         // Điều chỉnh thông báo dựa trên trạng thái đèn flash.
         // Tránh yêu cầu người dùng bật đèn khi flash đã tự bật.
         DetectionResult effectiveResult = result;
@@ -257,18 +275,15 @@ if (pausedUntil != null &&
 
           if (camera.isTorchEnabled) {
             // Flash đã bật nhưng ảnh camera vẫn chưa đủ sáng.
-            message =
-                'Ánh sáng vẫn yếu dù đèn flash đã bật. '
+            message = 'Ánh sáng vẫn yếu dù đèn flash đã bật. '
                 'Vui lòng điều chỉnh hướng camera.';
           } else if (_flashAttempted) {
             // Đã thử bật flash nhưng chưa thành công.
-            message =
-                'Không bật được đèn flash. '
+            message = 'Không bật được đèn flash. '
                 'Vui lòng di chuyển đến nơi sáng hơn.';
           } else {
             // Camera thấy tối nhưng hệ thống chưa bật flash.
-            message =
-                'Ánh sáng chưa đủ để nhận diện. '
+            message = 'Ánh sáng chưa đủ để nhận diện. '
                 'Hãy đưa tờ tiền vào vùng sáng hơn.';
           }
 
@@ -284,8 +299,7 @@ if (pausedUntil != null &&
           // Flash gây chói thì hướng dẫn điều chỉnh tờ tiền.
           effectiveResult = DetectionResult(
             status: DetectionStatus.tooBright,
-            message:
-                'Đèn flash làm ảnh quá sáng. '
+            message: 'Đèn flash làm ảnh quá sáng. '
                 'Hãy đưa tờ tiền ra xa hoặc nghiêng nhẹ.',
             brightness: result.brightness,
             inferenceTimeMs: result.inferenceTimeMs,
@@ -295,28 +309,11 @@ if (pausedUntil != null &&
 
         onResult(effectiveResult);
 
-
-        // 5. Giữ nguyên cơ chế tạm nghỉ sau các cảnh báo.
-        if (_needsCorrection(result.status)) {
-          if (_lastGuidanceStatus == result.status) {
-            _sameGuidanceFrames++;
-          } else {
-            _lastGuidanceStatus = result.status;
-            _sameGuidanceFrames = 1;
-          }
-
-          if (_sameGuidanceFrames >= 3) {
-            _classificationPauseUntil = DateTime.now().add(
-              const Duration(milliseconds: 3500),
-            );
-
-            _sameGuidanceFrames = 0;
-            _lastGuidanceStatus = null;
-          }
-        } else {
-          _sameGuidanceFrames = 0;
-          _lastGuidanceStatus = null;
-        }
+        // Slow down stable idle/correction states without freezing recognition.
+        final interval = _framePacing.update(effectiveResult.status);
+        camera.setFrameIntervalMs(camera.isTorchEnabled || _lightProbeActive
+            ? camera.minFrameIntervalMs
+            : interval);
       } catch (error) {
         onResult(
           DetectionResult.error(
@@ -325,52 +322,39 @@ if (pausedUntil != null &&
         );
       }
     });
+    camera.setFrameIntervalMs(_framePacing.intervalMs);
   }
-
-  bool _needsCorrection(DetectionStatus status) => switch (status) {
-        DetectionStatus.lowConfidence ||
-        DetectionStatus.multipleNotes ||
-        DetectionStatus.tooClose ||
-        DetectionStatus.tooFar ||
-        DetectionStatus.tooDark ||
-        DetectionStatus.tooBright =>
-          true,
-        _ => false,
-      };
 
   Future<bool> _handleAutoFlash(DetectionResult result) async {
+    if (!camera.supportsTorch) return false;
     final now = DateTime.now();
-    
-  final lux = _currentLux;
 
-  // Nếu cảm biến nhận thấy phòng đã sáng, ưu tiên Lux trở lại.
-  if (lux != null && lux >= 100) {
-    _useCameraLightFallback = false;
-  }
+    final lux = _currentLux;
 
-  // Nếu flash bật lâu nhưng Lux vẫn rất thấp,
-  // chuyển sang kiểm tra ánh sáng bằng camera.
-  if (!_useCameraLightFallback &&
-      camera.isTorchEnabled &&
-      _torchStartedAt != null &&
-      now.difference(_torchStartedAt!) >=
-          const Duration(seconds: 5) &&
-      (lux == null || lux < 100)) {
-    _useCameraLightFallback = true;
+    // Nếu cảm biến nhận thấy phòng đã sáng, ưu tiên Lux trở lại.
+    if (lux != null && lux >= 100) {
+      _useCameraLightFallback = false;
+    }
 
-    // Chuẩn bị kiểm tra ánh sáng phòng sau 2 giây.
-    _nextLightProbeAt = now.add(
-      const Duration(seconds: 2),
-    );
+    // Nếu flash bật lâu nhưng Lux vẫn rất thấp,
+    // chuyển sang kiểm tra ánh sáng bằng camera.
+    if (!_useCameraLightFallback &&
+        camera.isTorchEnabled &&
+        _torchStartedAt != null &&
+        now.difference(_torchStartedAt!) >= const Duration(seconds: 5) &&
+        (lux == null || lux < 100)) {
+      _useCameraLightFallback = true;
 
-    debugPrint(
-      '[AUTO_FLASH] Lux không đủ để quyết định tắt đèn. '
-      'Chuyển sang kiểm tra bằng camera.',
-    );
-  }
+      // Chuẩn bị kiểm tra ánh sáng phòng sau 2 giây.
+      _nextLightProbeAt = now.add(
+        const Duration(seconds: 2),
+      );
 
-
-
+      debugPrint(
+        '[AUTO_FLASH] Lux không đủ để quyết định tắt đèn. '
+        'Chuyển sang kiểm tra bằng camera.',
+      );
+    }
 
     if (lux != null && !_useCameraLightFallback) {
       // Không sử dụng cơ chế tắt flash 15 giây để thử sáng nữa.
@@ -393,7 +377,6 @@ if (pausedUntil != null &&
 
             if (success) {
               debugPrint(
-                
                 '[AUTO_FLASH] Phòng đủ sáng ($lux lx), '
                 'tự tắt flash',
               );
@@ -402,7 +385,6 @@ if (pausedUntil != null &&
                 'Ánh sáng đã đủ. Đèn flash đã tự tắt.',
               );
 
-
               _luxBrightSince = null;
               _torchStartedAt = null;
               _flashAttempted = false;
@@ -410,8 +392,6 @@ if (pausedUntil != null &&
 
               // Reset trạng thái cảnh báo của backend.
               _classificationPauseUntil = null;
-              _sameGuidanceFrames = 0;
-              _lastGuidanceStatus = null;
 
               // Không dùng kết quả frame vừa chụp với flash.
               return true;
@@ -455,8 +435,6 @@ if (pausedUntil != null &&
             _consecutiveDarkFrames = 0;
 
             _classificationPauseUntil = null;
-            _sameGuidanceFrames = 0;
-            _lastGuidanceStatus = null;
 
             debugPrint(
               '[AUTO_FLASH] Phòng tối ($lux lx), tự bật flash',
@@ -465,7 +443,6 @@ if (pausedUntil != null &&
             onFlashAnnouncement?.call(
               'Ánh sáng yếu. Đèn flash đã tự bật.',
             );
-
 
             // Bỏ qua kết quả cũ để xử lý frame có flash.
             return true;
@@ -574,8 +551,6 @@ if (pausedUntil != null &&
 
           // Bỏ thời gian nghỉ cũ để kiểm tra ánh sáng.
           _classificationPauseUntil = null;
-          _sameGuidanceFrames = 0;
-          _lastGuidanceStatus = null;
 
           debugPrint(
             '[AUTO_FLASH] Tạm tắt flash để kiểm tra ánh sáng',
@@ -605,8 +580,6 @@ if (pausedUntil != null &&
           _torchStartedAt = DateTime.now();
           _consecutiveDarkFrames = 0;
           _classificationPauseUntil = null;
-          _sameGuidanceFrames = 0;
-          _lastGuidanceStatus = null;
 
           // Sau 15 giây sẽ kiểm tra xem phòng đã sáng chưa.
           _nextLightProbeAt = DateTime.now().add(
@@ -627,12 +600,11 @@ if (pausedUntil != null &&
         );
 
         // Thông báo bằng giọng nói khi không bật được flash.
-          onFlashAnnouncement?.call(
-            'Không bật được đèn flash. '
-            'Vui lòng di chuyển đến nơi sáng hơn.',
-          );
+        onFlashAnnouncement?.call(
+          'Không bật được đèn flash. '
+          'Vui lòng di chuyển đến nơi sáng hơn.',
+        );
       }
-
     } else {
       _consecutiveDarkFrames = 0;
     }
@@ -642,6 +614,11 @@ if (pausedUntil != null &&
 
   @override
   Future<void> stop({bool releaseCamera = false}) async {
+    _idleReleaseTimer?.cancel();
+    _idleReleaseTimer = null;
+    _recognitionLocked = false;
+    _framePacing.reset();
+    camera.setFrameIntervalMs(camera.minFrameIntervalMs);
     _useCameraLightFallback = false;
     await _luxSubscription?.cancel();
     _luxSubscription = null;
@@ -656,7 +633,15 @@ if (pausedUntil != null &&
     try {
       await camera.stopStream();
     } finally {
-      if (releaseCamera) await camera.dispose();
+      if (releaseCamera) {
+        await camera.dispose();
+        _idleReleaseTimer = Timer(modelIdleTimeout, () {
+          _idleReleaseTimer = null;
+          _idleRelease = detector.releaseResources().catchError((Object error) {
+            debugPrint('Release idle model: $error');
+          });
+        });
+      }
     }
   }
 
@@ -665,6 +650,9 @@ if (pausedUntil != null &&
     try {
       await stop(releaseCamera: true);
     } finally {
+      _idleReleaseTimer?.cancel();
+      _idleReleaseTimer = null;
+      await _idleRelease;
       await detector.dispose();
     }
   }

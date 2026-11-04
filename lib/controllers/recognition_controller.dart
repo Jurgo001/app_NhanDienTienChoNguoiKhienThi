@@ -59,9 +59,10 @@ class RecognitionController extends ChangeNotifier {
     _lastGuidance = DateTime.now();
     final prompt =
         _state.guidance ?? 'Hãy đưa một tờ tiền vào giữa camera và giữ yên.';
-    _runFeedback(() => _speech.speak(prompt, rate: _getSettings().speechRate));
+    _runFeedback(() => _speech.speak(prompt,
+        rate: _getSettings().speechRate, priority: SpeechPriority.guidance));
   }
-  
+
   // Đọc thông báo khi flash tự bật hoặc tự tắt.
   // Sử dụng SpeechService hiện có để giữ chung cấu hình giọng nói.
   void announceFlashStatus(String message) {
@@ -87,10 +88,10 @@ class RecognitionController extends ChangeNotifier {
       () => _speech.speak(
         message,
         rate: _getSettings().speechRate,
+        priority: SpeechPriority.status,
       ),
     );
   }
-
 
   void processDetection(DetectionResult result) {
     if (_disposed) return;
@@ -183,6 +184,7 @@ class RecognitionController extends ChangeNotifier {
       () => _speech.speak(
         message,
         rate: _getSettings().speechRate,
+        priority: SpeechPriority.guidance,
       ),
     );
   }
@@ -206,6 +208,7 @@ class RecognitionController extends ChangeNotifier {
               ? 'Kết quả mô phỏng. ${denomination.spokenText}'
               : denomination.spokenText,
           rate: settings.speechRate,
+          priority: SpeechPriority.result,
         );
       } finally {
         _resultSpeechInProgress = false;

@@ -32,7 +32,8 @@ class TestSpeech extends SpeechService {
 
   @override
   Future<void> speak(String text,
-      {SpeechRateOption rate = SpeechRateOption.normal}) async {
+      {SpeechRateOption rate = SpeechRateOption.normal,
+      SpeechPriority priority = SpeechPriority.instruction}) async {
     spoken.add(text);
     rates.add(rate);
   }
@@ -65,6 +66,9 @@ class TestBackend extends ScanBackend {
   TestBackend({this.isMock = false});
   @override
   final bool isMock;
+  bool recognitionLocked = false;
+  @override
+  void setRecognitionLocked(bool value) => recognitionLocked = value;
   CameraAccess access = CameraAccess.granted;
   CameraAccess requestedAccess = CameraAccess.granted;
   int initializations = 0,

@@ -19,22 +19,22 @@ void main() {
       status: DetectionStatus.detected,
       denomination: Denomination.vnd100000,
       confidence: .95);
-  group('Điều phối tài nguyên', () {
-    setUp(() {
-      backend = TestBackend();
-      speech = TestSpeech();
-      recognition = RecognitionController(
-          speechService: speech,
-          hapticService: TestHaptic(),
-          getSettings: () => const AppSettings());
-      session = ScanSession(backend: backend, recognition: recognition);
-    });
-    tearDown(() async {
-      await session.close();
-      session.dispose();
-      recognition.dispose();
-    });
+  setUp(() {
+    backend = TestBackend();
+    speech = TestSpeech();
+    recognition = RecognitionController(
+        speechService: speech,
+        hapticService: TestHaptic(),
+        getSettings: () => const AppSettings());
+    session = ScanSession(backend: backend, recognition: recognition);
+  });
+  tearDown(() async {
+    await session.close();
+    session.dispose();
+    recognition.dispose();
+  });
 
+  group('Điều phối tài nguyên', () {
     test('New session ignores callbacks from the previous session', () async {
       await session.start();
       final old = backend.callbacks.single;
@@ -49,7 +49,10 @@ void main() {
       expect(recognition.state.status, RecognitionUiStatus.scanning);
       backend.recognize();
       expect(recognition.state.hasResult, isTrue);
-      expect(speech.spoken, hasLength(2));
+      expect(
+          speech.spoken
+              .where((text) => text == Denomination.vnd100000.spokenText),
+          hasLength(2));
     });
 
     test('Tạm dừng khi đang init không được mở stream sau khi rời màn',
@@ -99,10 +102,12 @@ void main() {
     await session.start();
     backend.recognize(Denomination.vnd50000);
     expect(recognition.state.status, RecognitionUiStatus.lockedAnnounced);
+    expect(backend.recognitionLocked, isTrue);
     for (var i = 0; i < RecognitionController.requiredEmptyFrames; i++) {
       backend.emit(DetectionResult.empty(isMock: backend.isMock));
     }
     expect(recognition.state.status, RecognitionUiStatus.scanning);
+    expect(backend.recognitionLocked, isFalse);
     backend.recognize(Denomination.vnd50000);
     expect(recognition.state.status, RecognitionUiStatus.lockedAnnounced);
   });

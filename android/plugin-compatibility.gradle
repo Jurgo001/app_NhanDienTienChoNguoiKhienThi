@@ -2,6 +2,10 @@
 subprojects { p ->
     p.afterEvaluate {
         if (p.name == 'tflite_flutter') {
+            // Keep Java bytecode aligned with the Kotlin target below.
+            p.android.compileOptions.sourceCompatibility = JavaVersion.VERSION_17
+            p.android.compileOptions.targetCompatibility = JavaVersion.VERSION_17
+
             p.tasks.matching {
                 it.name.startsWith('compile') &&
                 it.name.endsWith('Kotlin')

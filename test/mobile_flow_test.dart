@@ -14,14 +14,14 @@ void main() {
     final h = AppHarness();
     await h.mount(tester);
     await tapVisible(tester, find.text(AppStrings.settingsTitle));
-    await tapVisible(tester, find.text(AppStrings.guideTitle));
+    await tapVisible(tester, find.text(AppStrings.listenGuide));
     await tapVisible(tester, find.byTooltip('Quay lại'));
     expect(find.byType(SettingsScreen), findsOneWidget);
-    await tapVisible(tester, find.text(AppStrings.guideTitle));
+    await tapVisible(tester, find.text(AppStrings.listenGuide));
     await tapVisible(tester, find.byKey(const Key('start_recognition_button')));
     expect(find.byType(RecognitionScreen), findsOneWidget);
     expect(find.byType(SettingsScreen), findsNothing);
-    expect(h.backend.callbacks, hasLength(1));
+    expect(h.backend.callbacks, hasLength(2));
     expect(find.text(AppStrings.scanningTitle), findsOneWidget);
     await unmount(tester);
   });
@@ -31,13 +31,12 @@ void main() {
     final h = AppHarness();
     h.backend.access = CameraAccess.permanentlyDenied;
     await h.mount(tester);
-    await tapVisible(tester, find.text(AppStrings.settingsTitle));
     await tapVisible(tester, find.text(AppStrings.cameraPermissionTitle));
     await tapVisible(tester, find.byKey(const Key('grant_camera_button')));
     expect(h.backend.settingsOpened, 1);
     await tapVisible(
         tester, find.byKey(const Key('continue_without_camera_button')));
-    expect(find.byType(SettingsScreen), findsOneWidget);
+    expect(find.byType(RecognitionScreen), findsOneWidget);
     await unmount(tester);
   });
 
@@ -51,7 +50,7 @@ void main() {
     expect(tester.getSize(find.byType(Scaffold)), const Size(390, 844));
     await tapVisible(tester, find.text(AppStrings.settingsTitle));
     expect(tester.getSize(find.byType(Scaffold).last).width, 390);
-    await tapVisible(tester, find.text(AppStrings.guideTitle));
+    await tapVisible(tester, find.text(AppStrings.listenGuide));
     expect(tester.getSize(find.byType(Scaffold).last).width, 390);
     expect(tester.takeException(), isNull);
     await unmount(tester);

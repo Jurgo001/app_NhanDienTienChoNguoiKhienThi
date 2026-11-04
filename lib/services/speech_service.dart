@@ -1,10 +1,18 @@
+import 'dart:async';
 import 'package:flutter_tts/flutter_tts.dart';
 import '../core/models/app_settings.dart';
+
+enum SpeechPriority { status, guidance, instruction, result }
 
 class SpeechService {
   final FlutterTts _tts = FlutterTts();
   Future<void>? _initializing;
-  bool _ready = false;
+  Future<void> _configuration = Future.value();
+  Future<void>? _activeSpeech;
+  String? _activeText;
+  SpeechRateOption? _activeRate, _configuredRate;
+  SpeechPriority _activePriority = SpeechPriority.status;
+  bool _ready = false, _nativeSpeaking = false;
   int _request = 0;
 
   Future<void> initialize() {
@@ -28,20 +36,59 @@ class SpeechService {
     _ready = true;
   }
 
-  Future<void> speak(String text,
-      {SpeechRateOption rate = SpeechRateOption.normal}) async {
+  Future<void> speak(
+    String text, {
+    SpeechRateOption rate = SpeechRateOption.normal,
+    SpeechPriority priority = SpeechPriority.instruction,
+  }) {
+    final active = _activeSpeech;
+    if (active != null) {
+      if (_activeText == text && _activeRate == rate) return active;
+      // Do not queue obsolete camera instructions behind a denomination.
+      if (priority.index < _activePriority.index) return Future.value();
+    }
     final token = ++_request;
+    _activeText = text;
+    _activeRate = rate;
+    _activePriority = priority;
+    final speaking = _speak(token, text, rate).whenComplete(() {
+      if (token == _request) {
+        _activeSpeech = null;
+        _activeText = null;
+        _activeRate = null;
+        _nativeSpeaking = false;
+      }
+    });
+    _activeSpeech = speaking;
+    return speaking;
+  }
+
+  Future<void> _speak(int token, String text, SpeechRateOption rate) async {
     await initialize();
     if (token != _request) return;
-    await _tts.stop();
+    // Serialize only native preparation, never the duration of speech.
+    // This lets a result interrupt guidance without stale rate changes racing.
+    final prepare = _configuration.then((_) async {
+      if (token != _request) return;
+      if (_nativeSpeaking) {
+        await _tts.stop();
+        _nativeSpeaking = false;
+      }
+      if (token != _request) return;
+      if (_configuredRate != rate) {
+        final speed = switch (rate) {
+          SpeechRateOption.slow => .35,
+          SpeechRateOption.normal => .5,
+          SpeechRateOption.fast => .7,
+        };
+        await _tts.setSpeechRate(speed);
+        _configuredRate = rate;
+      }
+    });
+    _configuration = prepare.catchError((Object _) {});
+    await prepare;
     if (token != _request) return;
-    final speed = switch (rate) {
-      SpeechRateOption.slow => .35,
-      SpeechRateOption.normal => .5,
-      SpeechRateOption.fast => .7,
-    };
-    await _tts.setSpeechRate(speed);
-    if (token != _request) return;
+    _nativeSpeaking = true;
     final result = await _tts.speak(text);
     if (token == _request && (result == 0 || result == false)) {
       throw StateError(
@@ -51,6 +98,11 @@ class SpeechService {
 
   Future<void> stop() async {
     ++_request;
+    _activeSpeech = null;
+    _activeText = null;
+    _activeRate = null;
+    _nativeSpeaking = false;
+    // Cancellation must not wait for pending initialization/rate configuration.
     await _tts.stop();
   }
 }

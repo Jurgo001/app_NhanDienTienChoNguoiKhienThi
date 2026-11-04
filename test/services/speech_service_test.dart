@@ -45,4 +45,95 @@ void main() {
     await speaking;
     expect(calls.where((c) => c.method == 'speak'), isEmpty);
   });
+  test('Consecutive utterances reuse the speech rate and avoid redundant stops',
+      () async {
+    final calls = <MethodCall>[];
+    binding.defaultBinaryMessenger.setMockMethodCallHandler(channel,
+        (call) async {
+      calls.add(call);
+      return call.method == 'isLanguageAvailable' ? true : 1;
+    });
+    final service = SpeechService();
+    await service.speak('Một');
+    await service.speak('Hai');
+    await service.speak('Ba');
+    expect(calls.where((c) => c.method == 'speak'), hasLength(3));
+    expect(calls.where((c) => c.method == 'setSpeechRate'), hasLength(1));
+    expect(calls.where((c) => c.method == 'stop'), isEmpty);
+  });
+
+  test('Flash and guidance cannot interrupt an active denomination', () async {
+    final gate = Completer<int>();
+    final spoken = <String>[];
+    binding.defaultBinaryMessenger.setMockMethodCallHandler(channel,
+        (call) async {
+      if (call.method == 'isLanguageAvailable') return true;
+      if (call.method == 'speak') {
+        spoken.add(call.arguments as String);
+        return gate.future;
+      }
+      return 1;
+    });
+    final service = SpeechService();
+    final result =
+        service.speak('Một trăm nghìn đồng', priority: SpeechPriority.result);
+    await Future<void>.delayed(Duration.zero);
+    await service.speak('Đèn flash đã bật', priority: SpeechPriority.status);
+    await service.speak('Giữ yên tay', priority: SpeechPriority.guidance);
+    expect(spoken, ['Một trăm nghìn đồng']);
+    gate.complete(1);
+    await result;
+  });
+
+  test('Duplicate in-flight utterances are coalesced', () async {
+    final gate = Completer<int>();
+    var speaks = 0;
+    binding.defaultBinaryMessenger.setMockMethodCallHandler(channel,
+        (call) async {
+      if (call.method == 'isLanguageAvailable') return true;
+      if (call.method == 'speak') {
+        speaks++;
+        return gate.future;
+      }
+      return 1;
+    });
+    final service = SpeechService();
+    final first = service.speak('Giữ yên tay');
+    final duplicate = service.speak('Giữ yên tay');
+    expect(identical(first, duplicate), isTrue);
+    await Future<void>.delayed(Duration.zero);
+    expect(speaks, 1);
+    gate.complete(1);
+    await Future.wait([first, duplicate]);
+  });
+
+  test(
+      'A denomination preempts guidance and an error does not poison later speech',
+      () async {
+    final oldSpeech = Completer<int>();
+    final spoken = <String>[];
+    binding.defaultBinaryMessenger.setMockMethodCallHandler(channel,
+        (call) async {
+      if (call.method == 'isLanguageAvailable') return true;
+      if (call.method == 'stop' && !oldSpeech.isCompleted)
+        oldSpeech.complete(1);
+      if (call.method == 'speak') {
+        final text = call.arguments as String;
+        spoken.add(text);
+        if (text == 'Giữ yên tay') return oldSpeech.future;
+        if (text == 'Lỗi engine') return 0;
+      }
+      return 1;
+    });
+    final service = SpeechService();
+    final guidance =
+        service.speak('Giữ yên tay', priority: SpeechPriority.guidance);
+    await Future<void>.delayed(Duration.zero);
+    await service.speak('Năm mươi nghìn đồng', priority: SpeechPriority.result);
+    await guidance;
+    expect(spoken.take(2), ['Giữ yên tay', 'Năm mươi nghìn đồng']);
+    await expectLater(service.speak('Lỗi engine'), throwsStateError);
+    await service.speak('Thử lại');
+    expect(spoken.last, 'Thử lại');
+  });
 }

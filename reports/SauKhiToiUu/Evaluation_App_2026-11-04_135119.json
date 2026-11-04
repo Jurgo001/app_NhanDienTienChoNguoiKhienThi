@@ -1,0 +1,2080 @@
+{
+  "captured_at": "2026-11-04T13:51:19+07:00",
+  "timezone": "Asia/Ho_Chi_Minh (UTC+07:00)",
+  "workspace": "D:\\nam4Ki1\\app_HoTroNguoiKhienThi",
+  "commit": "7fe3f9a611e04dfcb69552e1c93439bc970fb254",
+  "branch": "main",
+  "git_status": "M .gitignore\n M android/plugin-compatibility.gradle\n M pubspec.lock\n?? tools/",
+  "git_diff": "diff --git a/.gitignore b/.gitignore\nindex fb5320b..39fa723 100644\n--- a/.gitignore\n+++ b/.gitignore\n@@ -22,4 +22,5 @@ android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java\n .vscode/\n .DS_Store\n Thumbs.db\n-/android/.kotlin/\n\\ No newline at end of file\n+/android/.kotlin/\n+/tools/web_runtime/node_modules/\ndiff --git a/android/plugin-compatibility.gradle b/android/plugin-compatibility.gradle\nindex e51b6a3..66911fc 100644\n--- a/android/plugin-compatibility.gradle\n+++ b/android/plugin-compatibility.gradle\n@@ -2,6 +2,10 @@\n subprojects { p ->\n     p.afterEvaluate {\n         if (p.name == 'tflite_flutter') {\n+            // Keep Java bytecode aligned with the Kotlin target below.\n+            p.android.compileOptions.sourceCompatibility = JavaVersion.VERSION_17\n+            p.android.compileOptions.targetCompatibility = JavaVersion.VERSION_17\n+\n             p.tasks.matching {\n                 it.name.startsWith('compile') &&\n                 it.name.endsWith('Kotlin')\ndiff --git a/pubspec.lock b/pubspec.lock\nindex 76966da..a5b4a50 100644\n--- a/pubspec.lock\n+++ b/pubspec.lock\n@@ -233,10 +233,10 @@ packages:\n     dependency: transitive\n     description:\n       name: intl\n-      sha256: \"3df61194eb431efc39c4ceba583b95633a403f46c9fd341e550ce0bfa50e9aa5\"\n+      sha256: \"1ca20c894b1717686a2319b8548763d812bc0aabdac580420a44c5178c57a867\"\n       url: \"https://pub.dev\"\n     source: hosted\n-    version: \"0.20.2\"\n+    version: \"0.20.3\"\n   jni:\n     dependency: transitive\n     description:\n@@ -305,10 +305,10 @@ packages:\n     dependency: transitive\n     description:\n       name: matcher\n-      sha256: dc0b7dc7651697ea4ff3e69ef44b0407ea32c487a39fff6a4004fa585e901861\n+      sha256: \"31bd099b47c10cd1aeb55146a2d46ce0277630ecef3f7dae54ad7873f36696cd\"\n       url: \"https://pub.dev\"\n     source: hosted\n-    version: \"0.12.19\"\n+    version: \"0.12.20\"\n   material_color_utilities:\n     dependency: transitive\n     description:\n@@ -321,10 +321,10 @@ packages:\n     dependency: transitive\n     description:\n       name: meta\n-      sha256: \"1741988757a65eb6b36abe716829688cf01910bbf91c34354ff7ec1c3de2b349\"\n+      sha256: \"307249ce4ff29d58a18e97f6345f539382eb9c9c29ecda628900f31de0443dd9\"\n       url: \"https://pub.dev\"\n     source: hosted\n-    version: \"1.18.0\"\n+    version: \"1.19.0\"\n   mime:\n     dependency: transitive\n     description:\n@@ -630,10 +630,10 @@ packages:\n     dependency: transitive\n     description:\n       name: test_api\n-      sha256: \"949a932224383300f01be9221c39180316445ecb8e7547f70a41a35bf421fb9e\"\n+      sha256: \"2a122cbe059f8b610d3a5415f42e255b6c17b1f21eee1d960f31080237fb4f11\"\n       url: \"https://pub.dev\"\n     source: hosted\n-    version: \"0.7.11\"\n+    version: \"0.7.12\"\n   tflite_flutter:\n     dependency: \"direct main\"\n     description:\n@@ -694,10 +694,10 @@ packages:\n     dependency: transitive\n     description:\n       name: vector_math\n-      sha256: d530bd74fea330e6e364cda7a85019c434070188383e1cd8d9777ee586914c5b\n+      sha256: fa49e1674cb84acb900141714e6c6e1f9ae099827c24d141430ff6819db4e1bc\n       url: \"https://pub.dev\"\n     source: hosted\n-    version: \"2.2.0\"\n+    version: \"2.4.4\"\n   vibration:\n     dependency: \"direct main\"\n     description:",
+  "sdk": {
+    "frameworkVersion": "3.47.7",
+    "channel": "stable",
+    "repositoryUrl": "https://github.com/flutter/flutter.git",
+    "frameworkRevision": "abaf9c523780a608bd46686fd5e53740a07077f8",
+    "frameworkCommitDate": "2026-10-08 09:51:21 -0700",
+    "engineRevision": "deb287481e3ce9468f3434937ced4240a70539ca",
+    "engineCommitDate": "2026-10-07 17:09:12.000Z",
+    "engineContentHash": "d8a2d6c768c334d53e16277f837970ffa1e2de81",
+    "engineBuildDate": "2026-10-08 00:51:44.552",
+    "dartSdkVersion": "3.13.5",
+    "devToolsVersion": "2.60.0",
+    "flutterVersion": "3.47.7"
+  },
+  "packages": {
+    "camera": "0.11.4",
+    "camera_android_camerax": "0.6.30",
+    "flutter_tts": "4.2.5",
+    "image": "4.12.0",
+    "light_sensor": "3.0.2",
+    "permission_handler": "11.4.0",
+    "share_plus": "13.3.1",
+    "shared_preferences": "2.5.6",
+    "tflite_flutter": "0.11.0",
+    "vibration": "3.2.1"
+  },
+  "artifacts": [
+    {
+      "path": "assets/models/best_float32.tflite",
+      "bytes": 12722283,
+      "MB": 12.722,
+      "MiB": 12.133,
+      "modified": "2026-11-04T10:43:16+07:00",
+      "sha256": "f11dafdda949f1cb12ef570452a6d938529b2adc220a5ef7af05fd7c10533ba6"
+    },
+    {
+      "path": "build/app/outputs/flutter-apk/app-debug.apk",
+      "bytes": 102240478,
+      "MB": 102.24,
+      "MiB": 97.504,
+      "modified": "2026-11-04T11:20:07+07:00",
+      "sha256": "d0618169b8d511335963113d44fbdd70d6404e40bb2e3ef1d4088582ebdf32dc",
+      "zip_breakdown": {
+        "other": {
+          "uncompressed_bytes": 670955,
+          "compressed_bytes": 514224,
+          "files": 510
+        },
+        "dex": {
+          "uncompressed_bytes": 17511520,
+          "compressed_bytes": 6881367,
+          "files": 14
+        },
+        "lib/arm64-v8a": {
+          "uncompressed_bytes": 3811360,
+          "compressed_bytes": 3811360,
+          "files": 5
+        },
+        "lib/armeabi-v7a": {
+          "uncompressed_bytes": 2651700,
+          "compressed_bytes": 2651700,
+          "files": 5
+        },
+        "lib/x86_64": {
+          "uncompressed_bytes": 45448920,
+          "compressed_bytes": 45448920,
+          "files": 6
+        },
+        "assets/flutter_other": {
+          "uncompressed_bytes": 92937757,
+          "compressed_bytes": 29959477,
+          "files": 11
+        },
+        "assets/model": {
+          "uncompressed_bytes": 12722283,
+          "compressed_bytes": 12722283,
+          "files": 1
+        }
+      },
+      "embedded_model_sha256": "f11dafdda949f1cb12ef570452a6d938529b2adc220a5ef7af05fd7c10533ba6"
+    },
+    {
+      "path": "build/app/outputs/flutter-apk/app-release.apk",
+      "bytes": 72902475,
+      "MB": 72.902,
+      "MiB": 69.525,
+      "modified": "2026-10-16T15:38:05+07:00",
+      "sha256": "69b9a0606d55ff4a39c974c9b8630183395849e35c3242ce0a01485fa4e251e6",
+      "zip_breakdown": {
+        "other": {
+          "uncompressed_bytes": 437898,
+          "compressed_bytes": 331595,
+          "files": 389
+        },
+        "dex": {
+          "uncompressed_bytes": 1899604,
+          "compressed_bytes": 860671,
+          "files": 1
+        },
+        "lib/arm64-v8a": {
+          "uncompressed_bytes": 19787584,
+          "compressed_bytes": 19787584,
+          "files": 6
+        },
+        "lib/armeabi-v7a": {
+          "uncompressed_bytes": 16011124,
+          "compressed_bytes": 16011124,
+          "files": 6
+        },
+        "lib/x86_64": {
+          "uncompressed_bytes": 22840016,
+          "compressed_bytes": 22840016,
+          "files": 6
+        },
+        "assets/flutter_other": {
+          "uncompressed_bytes": 144969,
+          "compressed_bytes": 111797,
+          "files": 8
+        },
+        "assets/model": {
+          "uncompressed_bytes": 12722294,
+          "compressed_bytes": 12722294,
+          "files": 1
+        }
+      },
+      "embedded_model_sha256": "e9ba6475885c939b0460a41041a3a6609c5fdcdda2ca847f0b2381ecf6ced3c4"
+    }
+  ],
+  "source_fingerprints": [
+    {
+      "path": "pubspec.yaml",
+      "sha256": "4c04d4c45847de36ec297f4ff2a1c0e454d4094a264db66afe2b1cd9f412d174"
+    },
+    {
+      "path": "pubspec.lock",
+      "sha256": "36d42eabdfa0d3b7a9f52d09ea0bc4e9adb71eb8716f1ff4211d0f5014ed0e5a"
+    },
+    {
+      "path": "lib/services/camera_service.dart",
+      "sha256": "45ff3d4040798b23466b9a533db107a7c4d47d51beff9225d543f9e67f6eacca"
+    },
+    {
+      "path": "lib/services/money_detector.dart",
+      "sha256": "52447292168331142bb55346699fd047499218b9f14d95bc607a8588e5a528ef"
+    },
+    {
+      "path": "lib/utils/image_converter.dart",
+      "sha256": "363d1afbff5bed0ef8eb46a6356f84e42f87c36794ec951b6066bb66d26b0bf0"
+    },
+    {
+      "path": "lib/controllers/recognition_controller.dart",
+      "sha256": "46679768c73e5bf101cd73aa18d15d310e4425f94476958a87a107372bd6b82f"
+    },
+    {
+      "path": "lib/controllers/scan_session.dart",
+      "sha256": "c6a7538e1f5f91f1a73457d35473f7bd84f3499171c8dda71d240992cc4e014f"
+    },
+    {
+      "path": "lib/services/scan_backend_native.dart",
+      "sha256": "869dea31be04aa3be15715ad0421fe65c33f7e011d8b2fe4cfd73f9786b64660"
+    },
+    {
+      "path": "lib/services/speech_service.dart",
+      "sha256": "eac01bfbcf486b7976d46e42bf7e68376edffa4cf94fbecb0719468e6d532b06"
+    },
+    {
+      "path": "lib/core/models/app_settings.dart",
+      "sha256": "4a3addf2962ebadd4f806f0e65b93b2b58d464b597bbba4c85faf706e1921560"
+    },
+    {
+      "path": "android/plugin-compatibility.gradle",
+      "sha256": "f1fa5631506d73758ad3cf3a0ba84021794819922927cc39537fbf4a8117927d"
+    },
+    {
+      "path": "android/app/build.gradle.kts",
+      "sha256": "2207fd8dc32fcb6852f921d253faa4b283d91d4d599fad76abce8c9cfd30778b"
+    },
+    {
+      "path": "android/settings.gradle.kts",
+      "sha256": "a9b5756048f668d4ebf355116678fd334cd5f2169b7d4518ad19b8df14d3af36"
+    },
+    {
+      "path": "android/gradle/wrapper/gradle-wrapper.properties",
+      "sha256": "4566bdfe046c74dd7aa93fa2494e914d29b7b14c86064c2c35885c3603bf117d"
+    },
+    {
+      "path": ".vscode/flutter-terminal.ps1",
+      "sha256": "5c868fc2475986460f8296b7754eca89eb50911a141b5d4b44c0c4068e86f883"
+    }
+  ],
+  "device_list": {
+    "code": 0,
+    "stdout": "List of devices attached\nemulator-5554          device product:sdk_gphone64_x86_64 model:sdk_gphone64_x86_64 device:emu64xa transport_id:9",
+    "stderr": ""
+  },
+  "device": {
+    "model": "sdk_gphone64_x86_64",
+    "release": "16",
+    "sdk": "36",
+    "abi": "x86_64",
+    "avd": "Flutter_API_36",
+    "boot_complete": "1",
+    "pid": "3700",
+    "meminfo": "Applications Memory Usage (in Kilobytes):\nUptime: 1286558 Realtime: 1286558\n\n** MEMINFO in pid 3700 [com.example.app_ho_tro_nguoi_khiem_thi] **\n                   Pss  Private  Private  SwapPss      Rss     Heap     Heap     Heap\n                 Total    Dirty    Clean    Dirty    Total     Size    Alloc     Free\n                ------   ------   ------   ------   ------   ------   ------   ------\n  Native Heap   111258   111148      100     6630   112156   125224    98432    22520\n  Dalvik Heap     6146     6124        0      162     7208     7005     3503     3502\n Dalvik Other     8327     2836       40      223    14060                           \n        Stack     1396     1396        0      132     1400                           \n       Ashmem      141        0        0        0      892                           \n    Other dev      188        0      188        0      484                           \n     .so mmap     3045      304      740       28    36320                           \n    .jar mmap     3665        0      988        0    48896                           \n    .apk mmap    17386      332    16844       76    18564                           \n    .ttf mmap     8374        0     8312        0     8576                           \n    .dex mmap       36        0       16        0      920                           \n    .oat mmap       67        0        0        0     1704                           \n    .art mmap     4648     4100      192     5044    20796                           \n   Other mmap    39416        4    36536        0    43312                           \n      Unknown   129533   126888     2640    24727   130036                           \n        TOTAL   370648   253132    66596    37022   445324   132229   101935    26022\n \n App Summary\n                       Pss(KB)                        Rss(KB)\n                        ------                         ------\n           Java Heap:    10416                          28004\n         Native Heap:   111148                         112156\n                Code:    27664                         126008\n               Stack:     1396                           1400\n            Graphics:        0                              0\n       Private Other:   169104\n              System:    50920\n             Unknown:                                  177756\n \n           TOTAL PSS:   370648            TOTAL RSS:   445324       TOTAL SWAP PSS:    37022\n \n Objects\n               Views:        6         ViewRootImpl:        1\n         AppContexts:        5           Activities:        1\n              Assets:       23        AssetManagers:        0\n       Local Binders:       27        Proxy Binders:       74\n       Parcel memory:       14         Parcel count:       56\n    Death Recipients:        2             WebViews:        0\n \n Native Allocations\n                         Count                       Total(kB)\n                        ------                         ------\n    Other (malloced):      332                             30\n Other (nonmalloced):      102                             73\n \n SQL\n         MEMORY_USED:        0\n  PAGECACHE_OVERFLOW:        0          MALLOC_SIZE:        0\n \n \n Asset Allocations\n    : 1607K\n    : 17K\n    : 21K",
+    "total_pss_kb": 370648,
+    "total_rss_kb": 445324,
+    "camera_evidence": "Active Camera Clients:\n(Camera ID: 10, Cost: 100, PID: 3700, Score: 0, State: 2User Id: 0, Client Package Name: com.example.app_ho_tro_nguoi_khiem_thi, Conflicting Client Devices: {})\n    Client package: com.example.app_ho_tro_nguoi_khiem_thi\n    Device status: ACTIVE\n    Stream configuration:",
+    "camera_stream_observed": "640 x 480 (dumpsys media.camera, camera ID 10, app ACTIVE)"
+  },
+  "avd_config": {
+    "hw.camera.back": "webcam0",
+    "hw.camera.back.orientation": "90",
+    "hw.camera.front": "none",
+    "hw.camera.front.orientation": "90",
+    "hw.cpu.ncore": "4",
+    "hw.gpu.enabled": "no",
+    "hw.gpu.mode": "auto",
+    "hw.ramSize": "2048",
+    "image.sysdir.1": "system-images\\android-36.1\\google_apis_playstore\\x86_64\\"
+  },
+  "effective_ram_mb": "2560",
+  "model_tensor_info": {
+    "identifier": "TFL3",
+    "inputs": [
+      {
+        "shape": [
+          1,
+          3,
+          416,
+          416
+        ],
+        "type": "float32"
+      }
+    ],
+    "outputs": [
+      {
+        "shape": [
+          1,
+          22,
+          3549
+        ],
+        "type": "float32"
+      }
+    ],
+    "fitz_available": false
+  },
+  "previous_verified_run": {
+    "assemble_debug_seconds": 69,
+    "install_seconds": 6.4,
+    "device": "emulator-5554",
+    "mode": "debug",
+    "note": "Observed in earlier verified flutter run in this conversation; single incremental run, not a controlled benchmark."
+  },
+  "measurement_status": {
+    "camera_latency": "not_measured",
+    "end_to_end_latency": "not_measured",
+    "tts_latency": "not_measured",
+    "battery": "not_measured",
+    "physical_device_pss": "not_measured",
+    "release_apk_current_source": "not_built",
+    "accuracy": "not_measured"
+  },
+  "optimization": {
+    "benchmark_before": {
+      "label": "before",
+      "run_id": "20261104051255",
+      "captured_at_utc": "2026-11-04T05:14:58.532126Z",
+      "mode": "debug",
+      "platform": "android",
+      "fixture": "deterministic YUV420 640x480; Y=80+((x+y)%100), U=V=128",
+      "warmup_frames": 5,
+      "rounds": [
+        {
+          "round": 1,
+          "samples": [
+            310.242,
+            515.161,
+            166.076,
+            481.533,
+            184.287,
+            111.542,
+            240.764,
+            352.844,
+            164.98,
+            117.971,
+            898.516,
+            614.795,
+            198.41,
+            160.449,
+            259.656,
+            132.465,
+            104.146,
+            111.471,
+            116.945,
+            119.148
+          ],
+          "median_ms": 166.076,
+          "p95_ms": 614.795,
+          "rss_bytes": 409759744
+        },
+        {
+          "round": 2,
+          "samples": [
+            152.908,
+            115.328,
+            89.52,
+            162.306,
+            121.476,
+            265.33,
+            169.434,
+            104.58,
+            153.011,
+            221.441,
+            245.368,
+            161.753,
+            173.075,
+            117.333,
+            95.966,
+            103.228,
+            110.462,
+            124.411,
+            130.264,
+            127.856
+          ],
+          "median_ms": 127.856,
+          "p95_ms": 245.368,
+          "rss_bytes": 390156288
+        },
+        {
+          "round": 3,
+          "samples": [
+            126.844,
+            94.058,
+            114.99,
+            94.341,
+            88.795,
+            94.986,
+            105.28,
+            105.207,
+            137.997,
+            91.582,
+            98.729,
+            101.423,
+            102.158,
+            120.966,
+            97.777,
+            89.486,
+            113.209,
+            110.91,
+            111.045,
+            95.129
+          ],
+          "median_ms": 101.423,
+          "p95_ms": 126.844,
+          "rss_bytes": 415813632
+        }
+      ],
+      "model": "TFLite float32: [1, 3, 416, 416] → [1, 22, 3549]",
+      "initialize_ms": 1255.13,
+      "signatures": [
+        {
+          "rotation": 0,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.814103",
+          "boxes": []
+        },
+        {
+          "rotation": 90,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.791420",
+          "boxes": []
+        },
+        {
+          "rotation": 180,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.682446",
+          "boxes": []
+        },
+        {
+          "rotation": 270,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.791420",
+          "boxes": []
+        },
+        {
+          "rotation": 0,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.814103",
+          "boxes": []
+        },
+        {
+          "rotation": 90,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.791420",
+          "boxes": []
+        },
+        {
+          "rotation": 180,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.682446",
+          "boxes": []
+        },
+        {
+          "rotation": 270,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.791420",
+          "boxes": []
+        },
+        {
+          "rotation": 0,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.814103",
+          "boxes": []
+        },
+        {
+          "rotation": 90,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.791420",
+          "boxes": []
+        },
+        {
+          "rotation": 180,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.682446",
+          "boxes": []
+        },
+        {
+          "rotation": 270,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.791420",
+          "boxes": []
+        },
+        {
+          "rotation": 0,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.814103",
+          "boxes": []
+        },
+        {
+          "rotation": 90,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.791420",
+          "boxes": []
+        },
+        {
+          "rotation": 180,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.682446",
+          "boxes": []
+        },
+        {
+          "rotation": 270,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.791420",
+          "boxes": []
+        },
+        {
+          "rotation": 0,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.814103",
+          "boxes": []
+        },
+        {
+          "rotation": 90,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.791420",
+          "boxes": []
+        },
+        {
+          "rotation": 180,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.682446",
+          "boxes": []
+        },
+        {
+          "rotation": 270,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.791420",
+          "boxes": []
+        },
+        {
+          "rotation": 0,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.814103",
+          "boxes": []
+        },
+        {
+          "rotation": 90,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.791420",
+          "boxes": []
+        },
+        {
+          "rotation": 180,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.682446",
+          "boxes": []
+        },
+        {
+          "rotation": 270,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.791420",
+          "boxes": []
+        },
+        {
+          "rotation": 0,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.814103",
+          "boxes": []
+        },
+        {
+          "rotation": 90,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.791420",
+          "boxes": []
+        },
+        {
+          "rotation": 180,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.682446",
+          "boxes": []
+        },
+        {
+          "rotation": 270,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.791420",
+          "boxes": []
+        },
+        {
+          "rotation": 0,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.814103",
+          "boxes": []
+        },
+        {
+          "rotation": 90,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.791420",
+          "boxes": []
+        },
+        {
+          "rotation": 180,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.682446",
+          "boxes": []
+        },
+        {
+          "rotation": 270,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.791420",
+          "boxes": []
+        },
+        {
+          "rotation": 0,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.814103",
+          "boxes": []
+        },
+        {
+          "rotation": 90,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.791420",
+          "boxes": []
+        },
+        {
+          "rotation": 180,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.682446",
+          "boxes": []
+        },
+        {
+          "rotation": 270,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.791420",
+          "boxes": []
+        },
+        {
+          "rotation": 0,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.814103",
+          "boxes": []
+        },
+        {
+          "rotation": 90,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.791420",
+          "boxes": []
+        },
+        {
+          "rotation": 180,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.682446",
+          "boxes": []
+        },
+        {
+          "rotation": 270,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.791420",
+          "boxes": []
+        },
+        {
+          "rotation": 0,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.814103",
+          "boxes": []
+        },
+        {
+          "rotation": 90,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.791420",
+          "boxes": []
+        },
+        {
+          "rotation": 180,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.682446",
+          "boxes": []
+        },
+        {
+          "rotation": 270,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.791420",
+          "boxes": []
+        },
+        {
+          "rotation": 0,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.814103",
+          "boxes": []
+        },
+        {
+          "rotation": 90,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.791420",
+          "boxes": []
+        },
+        {
+          "rotation": 180,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.682446",
+          "boxes": []
+        },
+        {
+          "rotation": 270,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.791420",
+          "boxes": []
+        },
+        {
+          "rotation": 0,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.814103",
+          "boxes": []
+        },
+        {
+          "rotation": 90,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.791420",
+          "boxes": []
+        },
+        {
+          "rotation": 180,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.682446",
+          "boxes": []
+        },
+        {
+          "rotation": 270,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.791420",
+          "boxes": []
+        },
+        {
+          "rotation": 0,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.814103",
+          "boxes": []
+        },
+        {
+          "rotation": 90,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.791420",
+          "boxes": []
+        },
+        {
+          "rotation": 180,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.682446",
+          "boxes": []
+        },
+        {
+          "rotation": 270,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.791420",
+          "boxes": []
+        },
+        {
+          "rotation": 0,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.814103",
+          "boxes": []
+        },
+        {
+          "rotation": 90,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.791420",
+          "boxes": []
+        },
+        {
+          "rotation": 180,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.682446",
+          "boxes": []
+        },
+        {
+          "rotation": 270,
+          "status": "noMoney",
+          "confidence": "0.000000",
+          "brightness": "129.791420",
+          "boxes": []
+        }
+      ],
+      "limitations": "Synthetic fixture; not an accuracy, camera, TTS or battery benchmark."
+    },
+    "benchmark_after_runs": [
+      {
+        "label": "after",
+        "run_id": "20261104055735",
+        "captured_at_utc": "2026-11-04T05:59:34.233853Z",
+        "mode": "debug",
+        "platform": "android",
+        "fixture": "deterministic YUV420 640x480; Y=80+((x+y)%100), U=V=128",
+        "warmup_frames": 5,
+        "rounds": [
+          {
+            "round": 1,
+            "samples": [
+              429.123,
+              478.256,
+              146.86,
+              130.616,
+              123.746,
+              156.829,
+              124.141,
+              116.532,
+              98.671,
+              177.09,
+              109.644,
+              104.812,
+              98.744,
+              88.035,
+              99.687,
+              86.877,
+              87.624,
+              93.917,
+              81.989,
+              102.155
+            ],
+            "median_ms": 104.812,
+            "p95_ms": 429.123,
+            "rss_bytes": 425680896
+          },
+          {
+            "round": 2,
+            "samples": [
+              102.249,
+              106.825,
+              89.583,
+              83.128,
+              84.394,
+              86.869,
+              95.412,
+              107.053,
+              98.746,
+              90.672,
+              96.084,
+              137.169,
+              106.785,
+              122.094,
+              99.111,
+              80.779,
+              104.809,
+              86.364,
+              86.314,
+              112.034
+            ],
+            "median_ms": 96.084,
+            "p95_ms": 122.094,
+            "rss_bytes": 425570304
+          },
+          {
+            "round": 3,
+            "samples": [
+              130.868,
+              124.878,
+              90.128,
+              95.765,
+              90.228,
+              91.353,
+              102.142,
+              96.674,
+              84.73,
+              85.238,
+              85.527,
+              92.525,
+              131.627,
+              104.268,
+              88.606,
+              85.763,
+              87.587,
+              83.401,
+              88.832,
+              83.261
+            ],
+            "median_ms": 90.128,
+            "p95_ms": 130.868,
+            "rss_bytes": 426090496
+          }
+        ],
+        "model": "TFLite float32: [1, 3, 416, 416] → [1, 22, 3549]",
+        "initialize_ms": 2230.396,
+        "signatures": [
+          {
+            "rotation": 0,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.814103",
+            "boxes": []
+          },
+          {
+            "rotation": 90,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 180,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.682446",
+            "boxes": []
+          },
+          {
+            "rotation": 270,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 0,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.814103",
+            "boxes": []
+          },
+          {
+            "rotation": 90,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 180,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.682446",
+            "boxes": []
+          },
+          {
+            "rotation": 270,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 0,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.814103",
+            "boxes": []
+          },
+          {
+            "rotation": 90,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 180,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.682446",
+            "boxes": []
+          },
+          {
+            "rotation": 270,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 0,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.814103",
+            "boxes": []
+          },
+          {
+            "rotation": 90,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 180,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.682446",
+            "boxes": []
+          },
+          {
+            "rotation": 270,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 0,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.814103",
+            "boxes": []
+          },
+          {
+            "rotation": 90,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 180,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.682446",
+            "boxes": []
+          },
+          {
+            "rotation": 270,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 0,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.814103",
+            "boxes": []
+          },
+          {
+            "rotation": 90,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 180,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.682446",
+            "boxes": []
+          },
+          {
+            "rotation": 270,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 0,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.814103",
+            "boxes": []
+          },
+          {
+            "rotation": 90,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 180,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.682446",
+            "boxes": []
+          },
+          {
+            "rotation": 270,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 0,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.814103",
+            "boxes": []
+          },
+          {
+            "rotation": 90,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 180,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.682446",
+            "boxes": []
+          },
+          {
+            "rotation": 270,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 0,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.814103",
+            "boxes": []
+          },
+          {
+            "rotation": 90,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 180,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.682446",
+            "boxes": []
+          },
+          {
+            "rotation": 270,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 0,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.814103",
+            "boxes": []
+          },
+          {
+            "rotation": 90,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 180,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.682446",
+            "boxes": []
+          },
+          {
+            "rotation": 270,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 0,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.814103",
+            "boxes": []
+          },
+          {
+            "rotation": 90,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 180,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.682446",
+            "boxes": []
+          },
+          {
+            "rotation": 270,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 0,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.814103",
+            "boxes": []
+          },
+          {
+            "rotation": 90,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 180,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.682446",
+            "boxes": []
+          },
+          {
+            "rotation": 270,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 0,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.814103",
+            "boxes": []
+          },
+          {
+            "rotation": 90,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 180,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.682446",
+            "boxes": []
+          },
+          {
+            "rotation": 270,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 0,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.814103",
+            "boxes": []
+          },
+          {
+            "rotation": 90,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 180,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.682446",
+            "boxes": []
+          },
+          {
+            "rotation": 270,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 0,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.814103",
+            "boxes": []
+          },
+          {
+            "rotation": 90,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 180,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.682446",
+            "boxes": []
+          },
+          {
+            "rotation": 270,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          }
+        ],
+        "limitations": "Synthetic fixture; not an accuracy, camera, TTS or battery benchmark."
+      },
+      {
+        "label": "after",
+        "run_id": "20261104060220",
+        "captured_at_utc": "2026-11-04T06:03:14.297047Z",
+        "mode": "debug",
+        "platform": "android",
+        "fixture": "deterministic YUV420 640x480; Y=80+((x+y)%100), U=V=128",
+        "warmup_frames": 5,
+        "rounds": [
+          {
+            "round": 1,
+            "samples": [
+              122.183,
+              111.988,
+              98.084,
+              103.355,
+              95.815,
+              103.147,
+              97.819,
+              107.875,
+              106.12,
+              92.983,
+              114.326,
+              92.382,
+              97.647,
+              105.599,
+              90.964,
+              94.273,
+              101.209,
+              126.764,
+              109.096,
+              95.039
+            ],
+            "median_ms": 101.209,
+            "p95_ms": 122.183,
+            "rss_bytes": 462573568
+          },
+          {
+            "round": 2,
+            "samples": [
+              103.243,
+              102.841,
+              105.937,
+              87.002,
+              96.386,
+              109.657,
+              102.736,
+              125.846,
+              120.844,
+              142.803,
+              103.855,
+              95.967,
+              121.857,
+              87.128,
+              101.6,
+              92.61,
+              84.011,
+              101.906,
+              99.382,
+              85.527
+            ],
+            "median_ms": 101.906,
+            "p95_ms": 125.846,
+            "rss_bytes": 447012864
+          },
+          {
+            "round": 3,
+            "samples": [
+              81.325,
+              88.78,
+              102.5,
+              89.621,
+              92.604,
+              94.739,
+              108.926,
+              87.06,
+              97.783,
+              110.346,
+              84.284,
+              88.125,
+              100.216,
+              111.643,
+              90.632,
+              82.172,
+              83.208,
+              90.762,
+              86.429,
+              123.092
+            ],
+            "median_ms": 90.632,
+            "p95_ms": 111.643,
+            "rss_bytes": 451694592
+          }
+        ],
+        "model": "TFLite float32: [1, 3, 416, 416] → [1, 22, 3549]",
+        "initialize_ms": 4345.863,
+        "signatures": [
+          {
+            "rotation": 0,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.814103",
+            "boxes": []
+          },
+          {
+            "rotation": 90,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 180,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.682446",
+            "boxes": []
+          },
+          {
+            "rotation": 270,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 0,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.814103",
+            "boxes": []
+          },
+          {
+            "rotation": 90,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 180,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.682446",
+            "boxes": []
+          },
+          {
+            "rotation": 270,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 0,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.814103",
+            "boxes": []
+          },
+          {
+            "rotation": 90,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 180,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.682446",
+            "boxes": []
+          },
+          {
+            "rotation": 270,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 0,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.814103",
+            "boxes": []
+          },
+          {
+            "rotation": 90,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 180,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.682446",
+            "boxes": []
+          },
+          {
+            "rotation": 270,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 0,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.814103",
+            "boxes": []
+          },
+          {
+            "rotation": 90,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 180,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.682446",
+            "boxes": []
+          },
+          {
+            "rotation": 270,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 0,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.814103",
+            "boxes": []
+          },
+          {
+            "rotation": 90,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 180,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.682446",
+            "boxes": []
+          },
+          {
+            "rotation": 270,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 0,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.814103",
+            "boxes": []
+          },
+          {
+            "rotation": 90,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 180,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.682446",
+            "boxes": []
+          },
+          {
+            "rotation": 270,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 0,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.814103",
+            "boxes": []
+          },
+          {
+            "rotation": 90,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 180,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.682446",
+            "boxes": []
+          },
+          {
+            "rotation": 270,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 0,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.814103",
+            "boxes": []
+          },
+          {
+            "rotation": 90,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 180,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.682446",
+            "boxes": []
+          },
+          {
+            "rotation": 270,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 0,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.814103",
+            "boxes": []
+          },
+          {
+            "rotation": 90,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 180,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.682446",
+            "boxes": []
+          },
+          {
+            "rotation": 270,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 0,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.814103",
+            "boxes": []
+          },
+          {
+            "rotation": 90,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 180,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.682446",
+            "boxes": []
+          },
+          {
+            "rotation": 270,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 0,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.814103",
+            "boxes": []
+          },
+          {
+            "rotation": 90,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 180,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.682446",
+            "boxes": []
+          },
+          {
+            "rotation": 270,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 0,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.814103",
+            "boxes": []
+          },
+          {
+            "rotation": 90,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 180,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.682446",
+            "boxes": []
+          },
+          {
+            "rotation": 270,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 0,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.814103",
+            "boxes": []
+          },
+          {
+            "rotation": 90,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 180,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.682446",
+            "boxes": []
+          },
+          {
+            "rotation": 270,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 0,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.814103",
+            "boxes": []
+          },
+          {
+            "rotation": 90,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          },
+          {
+            "rotation": 180,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.682446",
+            "boxes": []
+          },
+          {
+            "rotation": 270,
+            "status": "noMoney",
+            "confidence": "0.000000",
+            "brightness": "129.791420",
+            "boxes": []
+          }
+        ],
+        "limitations": "Synthetic fixture; not an accuracy, camera, TTS or battery benchmark."
+      }
+    ],
+    "benchmark_after_paths": [
+      "reports/optimization/after/detector-benchmark-compressed-model.json",
+      "reports/optimization/after/detector-benchmark-uncompressed-model.json"
+    ],
+    "before": {
+      "n": 60,
+      "median_ms": 120.05699999999999,
+      "p95_ms": 481.533,
+      "rss_mean_mib": 386.4700520833333,
+      "rounds": [
+        {
+          "round": 1,
+          "median_ms": 175.1815,
+          "p95_ms": 614.795,
+          "rss_mib": 390.77734375
+        },
+        {
+          "round": 2,
+          "median_ms": 129.06,
+          "p95_ms": 245.368,
+          "rss_mib": 372.08203125
+        },
+        {
+          "round": 3,
+          "median_ms": 101.79050000000001,
+          "p95_ms": 126.844,
+          "rss_mib": 396.55078125
+        }
+      ]
+    },
+    "after": {
+      "n": 120,
+      "median_ms": 98.3775,
+      "p95_ms": 137.169,
+      "rss_mean_mib": 419.3977864583333,
+      "rounds": [
+        {
+          "round": 1,
+          "median_ms": 107.22800000000001,
+          "p95_ms": 429.123,
+          "rss_mib": 405.9609375
+        },
+        {
+          "round": 2,
+          "median_ms": 97.41499999999999,
+          "p95_ms": 122.094,
+          "rss_mib": 405.85546875
+        },
+        {
+          "round": 3,
+          "median_ms": 90.178,
+          "p95_ms": 130.868,
+          "rss_mib": 406.3515625
+        },
+        {
+          "round": 4,
+          "median_ms": 102.178,
+          "p95_ms": 122.183,
+          "rss_mib": 441.14453125
+        },
+        {
+          "round": 5,
+          "median_ms": 102.321,
+          "p95_ms": 125.846,
+          "rss_mib": 426.3046875
+        },
+        {
+          "round": 6,
+          "median_ms": 90.697,
+          "p95_ms": 111.643,
+          "rss_mib": 430.76953125
+        }
+      ]
+    },
+    "same_signatures": true,
+    "effective_model_zip_method": "STORED in every inspected artifact",
+    "limitations": "Emulator x86_64, debug; synthetic detector fixture; host load and cache not controlled. No physical-device battery, camera end-to-end or TTS start latency measurements.",
+    "median_reduction_pct": 18.057672605512376,
+    "p95_reduction_pct": 71.51410183725726,
+    "rss_change_pct": 8.5201257374271,
+    "apk_before": {
+      "path": "reports/optimization/before/app-before-arm64-release.apk",
+      "bytes": 42298589,
+      "MiB": 40.339077949523926,
+      "sha256": "ad3e9f697750cbc1a6be4863686c2d7fab07f1ed2441454726cbf445a3035b71",
+      "abis": [
+        "arm64-v8a",
+        "armeabi-v7a",
+        "x86_64"
+      ],
+      "model_bytes": 12722283,
+      "model_compressed_bytes": 12722283,
+      "model_zip_method": 0,
+      "model_sha256": "f11dafdda949f1cb12ef570452a6d938529b2adc220a5ef7af05fd7c10533ba6"
+    },
+    "apk_after": {
+      "path": "reports/optimization/after/app-after-arm64-release.apk",
+      "bytes": 34289890,
+      "MiB": 32.70138740539551,
+      "sha256": "f8c1054e6358e4590f1c53f9adce6fd0767612ccd6459475bdcbe90e629b3f91",
+      "abis": [
+        "arm64-v8a"
+      ],
+      "model_bytes": 12722283,
+      "model_compressed_bytes": 12722283,
+      "model_zip_method": 0,
+      "model_sha256": "f11dafdda949f1cb12ef570452a6d938529b2adc220a5ef7af05fd7c10533ba6"
+    },
+    "model_sha256": "f11dafdda949f1cb12ef570452a6d938529b2adc220a5ef7af05fd7c10533ba6",
+    "apk_reduction_pct": 18.933726134458055,
+    "idle": {
+      "device_id": "emulator-5554",
+      "build_mode": "debug",
+      "limitations": "Within-version lifecycle check on emulator; not a controlled before/after RAM or battery benchmark.",
+      "samples": [
+        {
+          "phase": "active_before_background",
+          "captured_utc": "2026-11-04T06:48:50.8601464Z",
+          "pid": "6016",
+          "total_pss_kib": 400082,
+          "total_rss_kib": 508336,
+          "camera_active": true,
+          "meminfo": "Applications Memory Usage (in Kilobytes):\r\nUptime: 8495125 Realtime: 8495125\r\n\r\n** MEMINFO in pid 6016 [com.example.app_ho_tro_nguoi_khiem_thi] **\r\n                   Pss  Private  Private  SwapPss      Rss     Heap     Heap     Heap\r\n                 Total    Dirty    Clean    Dirty    Total     Size    Alloc     Free\r\n                ------   ------   ------   ------   ------   ------   ------   ------\r\n  Native Heap    97074    97056        4       59    97924   114880    89590    20211\r\n  Dalvik Heap    13645     8244     5344       37    14352     6669     3335     3334\r\n Dalvik Other     8757     3164       52        5    14576                           \r\n        Stack     1472     1472        0        0     1476                           \r\n       Ashmem      294        0        0        0      664                           \r\n    Other dev      133        0      132        0      428                           \r\n     .so mmap     5262      312     2524       34    37636                           \r\n    .jar mmap     5022        0     2144        0    49208                           \r\n    .apk mmap    20518      648    19616        0    21812                           \r\n    .ttf mmap    10181        0    10064        0    10508                           \r\n    .dex mmap       52        0       32        0      936                           \r\n    .oat mmap       86        0        0        0     1712                           \r\n    .art mmap    12719     9016     3220      110    28168                           \r\n   Other mmap    57494        4    54588        0    61324                           \r\n      Unknown   167119   167108        4        9   167612                           \r\n        TOTAL   400082   287024    97724      254   508336   121549    92925    23545\r\n \r\n App Summary\r\n                       Pss(KB)                        Rss(KB)\r\n                        ------                         ------\r\n           Java Heap:    20480                          42520\r\n         Native Heap:    97056                          97924\r\n                Code:    35528                         133072\r\n               Stack:     1472                           1476\r\n            Graphics:        0                              0\r\n       Private Other:   230212\r\n              System:    15334\r\n             Unknown:                                  233344\r\n \r\n           TOTAL PSS:   400082            TOTAL RSS:   508336       TOTAL SWAP PSS:      254\r\n \r\n Objects\r\n               Views:        6         ViewRootImpl:        1\r\n         AppContexts:        5           Activities:        1\r\n              Assets:       22        AssetManagers:        0\r\n       Local Binders:       27        Proxy Binders:       72\r\n       Parcel memory:       13         Parcel count:       52\r\n    Death Recipients:        2             WebViews:        0\r\n \r\n Native Allocations\r\n                         Count                       Total(kB)\r\n                        ------                         ------\r\n    Other (malloced):      345                             31\r\n Other (nonmalloced):       96                             70\r\n \r\n SQL\r\n         MEMORY_USED:        0\r\n  PAGECACHE_OVERFLOW:        0          MALLOC_SIZE:        0\r\n \r\n \r\n Asset Allocations\r\n    : 1607K\r\n    : 17K\r\n ",
+          "native_heap_alloc_kib": 89590
+        },
+        {
+          "phase": "background_after_18_seconds",
+          "captured_utc": "2026-11-04T06:49:09.2389346Z",
+          "pid": "6016",
+          "total_pss_kib": 334146,
+          "total_rss_kib": 442040,
+          "camera_active": false,
+          "meminfo": "Applications Memory Usage (in Kilobytes):\r\nUptime: 8513652 Realtime: 8513652\r\n\r\n** MEMINFO in pid 6016 [com.example.app_ho_tro_nguoi_khiem_thi] **\r\n                   Pss  Private  Private  SwapPss      Rss     Heap     Heap     Heap\r\n                 Total    Dirty    Clean    Dirty    Total     Size    Alloc     Free\r\n                ------   ------   ------   ------   ------   ------   ------   ------\r\n  Native Heap    46114    46096        4       59    46964    76916    51141    21340\r\n  Dalvik Heap     7425     2024     5344       37     8132     4355     3299     1056\r\n Dalvik Other     8711     3112       52        5    14536                           \r\n        Stack     1328     1328        0        0     1332                           \r\n       Ashmem      166        0        0        0      396                           \r\n    Other dev      133        0      132        0      428                           \r\n     .so mmap     5490      312     2632       34    37636                           \r\n    .jar mmap     5022        0     2144        0    49208                           \r\n    .apk mmap    20518      648    19616        0    21812                           \r\n    .ttf mmap    10181        0    10064        0    10508                           \r\n    .dex mmap       52        0       32        0      936                           \r\n    .oat mmap       86        0        0        0     1712                           \r\n    .art mmap    12723     9020     3220      110    28168                           \r\n   Other mmap    49816        4    46904        0    53652                           \r\n      Unknown   166127   166116        4        9   166620                           \r\n        TOTAL   334146   228660    90148      254   442040    81271    54440    22396\r\n \r\n App Summary\r\n                       Pss(KB)                        Rss(KB)\r\n                        ------                         ------\r\n           Java Heap:    14264                          36300\r\n         Native Heap:    46096                          46964\r\n                Code:    35648                         133096\r\n               Stack:     1328                           1332\r\n            Graphics:        0                              0\r\n       Private Other:   221472\r\n              System:    15338\r\n             Unknown:                                  224348\r\n \r\n           TOTAL PSS:   334146            TOTAL RSS:   442040       TOTAL SWAP PSS:      254\r\n \r\n Objects\r\n               Views:        6         ViewRootImpl:        1\r\n         AppContexts:        5           Activities:        1\r\n              Assets:       22        AssetManagers:        0\r\n       Local Binders:       24        Proxy Binders:       57\r\n       Parcel memory:       13         Parcel count:       52\r\n    Death Recipients:        1             WebViews:        0\r\n \r\n Native Allocations\r\n                         Count                       Total(kB)\r\n                        ------                         ------\r\n    Other (malloced):      327                             29\r\n Other (nonmalloced):       94                             68\r\n \r\n SQL\r\n         MEMORY_USED:        0\r\n  PAGECACHE_OVERFLOW:        0          MALLOC_SIZE:        0\r\n \r\n \r\n Asset Allocations\r\n    : 1607K\r\n    : 17K\r\n ",
+          "native_heap_alloc_kib": 51141
+        },
+        {
+          "phase": "resumed_camera_ready",
+          "captured_utc": "2026-11-04T06:49:14.8740285Z",
+          "pid": "6016",
+          "total_pss_kib": 387626,
+          "total_rss_kib": 495616,
+          "camera_active": true,
+          "meminfo": "Applications Memory Usage (in Kilobytes):\r\nUptime: 8519053 Realtime: 8519053\r\n\r\n** MEMINFO in pid 6016 [com.example.app_ho_tro_nguoi_khiem_thi] **\r\n                   Pss  Private  Private  SwapPss      Rss     Heap     Heap     Heap\r\n                 Total    Dirty    Clean    Dirty    Total     Size    Alloc     Free\r\n                ------   ------   ------   ------   ------   ------   ------   ------\r\n  Native Heap    85258    85240        4       59    86108   109820    84826    20247\r\n  Dalvik Heap     8885     3484     5344       37     9592    11605     6031     5574\r\n Dalvik Other     8797     3192       52        5    14628                           \r\n        Stack     1480     1480        0        0     1484                           \r\n       Ashmem      236        0        0        0      548                           \r\n    Other dev      133        0      132        0      428                           \r\n     .so mmap     5490      312     2632       34    37636                           \r\n    .jar mmap     5022        0     2144        0    49208                           \r\n    .apk mmap    20518      648    19616        0    21812                           \r\n    .ttf mmap    10181        0    10064        0    10508                           \r\n    .dex mmap       52        0       32        0      936                           \r\n    .oat mmap       86        0        0        0     1712                           \r\n    .art mmap    12721     9020     3216      110    28168                           \r\n   Other mmap    62250        4    59332        0    66092                           \r\n      Unknown   166263   166252        4        9   166756                           \r\n        TOTAL   387626   269632   102572      254   495616   121425    90857    25821\r\n \r\n App Summary\r\n                       Pss(KB)                        Rss(KB)\r\n                        ------                         ------\r\n           Java Heap:    15720                          37760\r\n         Native Heap:    85240                          86108\r\n                Code:    35636                         133096\r\n               Stack:     1480                           1484\r\n            Graphics:        0                              0\r\n       Private Other:   234128\r\n              System:    15422\r\n             Unknown:                                  237168\r\n \r\n           TOTAL PSS:   387626            TOTAL RSS:   495616       TOTAL SWAP PSS:      254\r\n \r\n Objects\r\n               Views:        6         ViewRootImpl:        1\r\n         AppContexts:        5           Activities:        1\r\n              Assets:       22        AssetManagers:        0\r\n       Local Binders:       27        Proxy Binders:       71\r\n       Parcel memory:       13         Parcel count:       52\r\n    Death Recipients:        2             WebViews:        0\r\n \r\n Native Allocations\r\n                         Count                       Total(kB)\r\n                        ------                         ------\r\n    Other (malloced):      342                             31\r\n Other (nonmalloced):       96                             70\r\n \r\n SQL\r\n         MEMORY_USED:        0\r\n  PAGECACHE_OVERFLOW:        0          MALLOC_SIZE:        0\r\n \r\n \r\n Asset Allocations\r\n    : 1607K\r\n    : 17K\r\n ",
+          "resume_elapsed_seconds": 5.5741287999999996,
+          "native_heap_alloc_kib": 84826
+        }
+      ]
+    },
+    "tests_passed": 81,
+    "baseline_tests": {
+      "passed": 52,
+      "failed": 5,
+      "note": "Five existing stale test cases/fixtures were corrected; these are not performance gains."
+    },
+    "analysis": {
+      "errors": 0,
+      "warnings": 0,
+      "info": 2
+    },
+    "source_after_sha256": {
+      "lib/app.dart": "a86de7d7848ac21342150f86a68ba222282f261564b32a4fbc6e6f71c5949a21",
+      "lib/main.dart": "a6b4580f3eb92aeccd1d585562a16ed2dfb533698bf634ec70a3fd3a6db07629",
+      "lib/main_benchmark.dart": "68ffbac6dea7fe7f6a025fba14bfb0f155fbd456b6fe624bced8feecee788cbb",
+      "lib/main_detector_test.dart": "f96c33224a14a65b0f2e5a451b1bf599d0a67407705abd38444cf7c6a2fc0ef9",
+      "lib/main_haptic_test.dart": "80216108ffe33cc14b45f0c6835c4d117f2d396f499d2517d5366b778e87d53d",
+      "lib/main_settings_test.dart": "d271ce5631a852f96c78acde42af20d8a10b06afbce1ddcda457c95d7d506804",
+      "lib/main_tts_test.dart": "1e1a6fff4eca1ed1e2abe7e2d5a3e85a05512158777ddf850543e9dc0a1c59c8",
+      "lib/controllers/recognition_controller.dart": "ff6824396db3877468c6503d42dbd24f66977b29882f97f9591a771913733afb",
+      "lib/controllers/scan_session.dart": "29d62a3a573efcb43fcba1a2a6f87dde6e19b88b739481415c86c72554bcfafb",
+      "lib/controllers/settings_controller.dart": "1a5a1351723240d88dfcd0efac3ae77f2070ca27198e0e35cb1ad460ef8b96d4",
+      "lib/debug/detector_test_screen.dart": "1617ce004f0a922f71279419bd6d9e0c654077dc82ec73c25b5547776372d0a4",
+      "lib/debug/mock_recognition_scenarios.dart": "ac59a456819cf3074b8d88e03e126401e566ee9483ddafbac83cc1bd692f8237",
+      "lib/debug/recognition_demo_controls.dart": "417b6e467788b8edfb8179197d91df1b04a26b3e7bf02ad2b249b8b155916a5f",
+      "lib/models/denomination.dart": "248c7c28ff914eaa3c33e16656ad670f1647b5a92e1329d3eb6639add11cc1bf",
+      "lib/models/detection_result.dart": "2fbf14b84ceb8186b00a6cb91709654669edcedbe916b21deae7d421880f8e5d",
+      "lib/services/camera_capabilities.dart": "98d3626d3791620ebd29f0e7fd27bc15bf7da14a09558f4f1cb891270f317c28",
+      "lib/services/camera_service.dart": "1d6343b70d666cd0727025b8755c702b6590bda4a5344ac022e5d99503226098",
+      "lib/services/detection_csv_logger.dart": "d69b7aa69e118662509e2184430718c60fb81e529f4a716ee64ab64a65ff923b",
+      "lib/services/detector_service.dart": "79ef768b145cb34ddd0b1650ed6fb551924b710971ba60f414033c4b696d09a7",
+      "lib/services/frame_pacing.dart": "9574d5c5f72bdde61af988c72ae6b8c34e7016bcd36fea78449a06a3bd0d5d55",
+      "lib/services/haptic_service.dart": "ef19fda4636da3369698ae4a351ea89851d729da5e99ccf77f1443b9a37e5ba5",
+      "lib/services/image_quality_service.dart": "4ef62ea4dae9c48736c8dd330538d712c296ddfdee789bc062a06b8513fdf0b4",
+      "lib/services/mock_money_detector.dart": "f4b8150a6253034ad461d771e7927d070fe8229af6491e80a0687a265519ea39",
+      "lib/services/model_asset_file.dart": "5dc78435da12e8aa50604af68b65bf4ab84ac05df890b655bd8202ab63d11b96",
+      "lib/services/money_detector.dart": "17d27feff2691668e9f3b48819008008bbe1ef5d72b7e1303eec7b0284d2365f",
+      "lib/services/persistent_worker.dart": "853ddfe465714e3a2f0096f5e5e922efd41ca120c6d130013ffcdbccf94164c0",
+      "lib/services/scan_backend.dart": "8faf1eadcd1ccbda968200bda6f60569c804507bb1bad75bac0d0af40af9054b",
+      "lib/services/scan_backend_factory.dart": "547adccef62eb77519b9f9243c37286c3a0ce5e4a85ed5e8c4440a2520f70e29",
+      "lib/services/scan_backend_native.dart": "7394f5266c28262cae32459c39ca3b1c18a54312271e4faa85a8a1462f36e427",
+      "lib/services/scan_backend_web.dart": "6b09e2a9f154899bf1edf7a8d87754298d57faed4326733aee4ddb281604e944",
+      "lib/services/settings_service.dart": "657ee2cf974bf1d5379716b85d3897fb156aae20bbd33cad778bffc7ab93fc99",
+      "lib/services/speech_service.dart": "3cb72666ff67ad50ca94af09b934048fba28ecfdf3d0c75e08a6f81eb3890ab2",
+      "lib/utils/denomination_mapper.dart": "24dbe5db610efe2a4cedf3a85367a01d1d8c336b8baaf2ec78284c3e954f124b",
+      "lib/utils/image_converter.dart": "a6591e066160e1964e50e2f6cdd0019978bc6fe657b1048165d4d60043cbf6d7",
+      "lib/utils/model_contract.dart": "3203a646ae267326489b62384731741031b8d2c5299fe45ab458254c65fbf88a",
+      "lib/utils/nms.dart": "93ef441b6de012fa65630f5b216b1b2ef9ba84b76828345863fb448b85525c15",
+      "lib/utils/transferred_frame.dart": "2756bc24596a8e8714db8ddd4b00af070c35a012df4d968ef12569d55f71f783",
+      "lib/utils/yolo_decoder.dart": "89431b66deea83e8e7496a1c0738960b804cb8a2acac35f6591d0f61603b467f",
+      "lib/widgets/accessible_button.dart": "08d2b4aab0687ebaa7f92b3e0d4fe31c9c0ebabada80e897efd1e70a1030d753",
+      "lib/widgets/camera_frame.dart": "99924b6bb7b02d7a9791ab99117d2b734d8f7d3aaeeb6c2ee6b3ad0b61d5e247",
+      "lib/widgets/denomination_card.dart": "12e2c4aa08495ac6b7c5ad15c60b4ff80072357cc11535d44dd15b918c26faaa",
+      "lib/widgets/mobile_page.dart": "22810930d973174d4891596688a02ec22eb5c4d006b21c58bb63f82702cafa18",
+      "lib/widgets/recognition_status.dart": "1f552dcfc4fdfe05f464d972aa3a3b288192ea172f802c0073df01c476136f2e",
+      "lib/screens/guide/guide_screen.dart": "9d80461596277169de35bab539e2609f29b70a14eb7192cafecd97399e4a64ab",
+      "lib/screens/permission/camera_permission_screen.dart": "70020387ebb4668df5f04c386e2389828246326cd950a821e6bcf0bd5a580201",
+      "lib/screens/recognition/recognition_screen.dart": "6b35260c74a247dde122f8ed651f5e01a284aa3bd2435dc71c53e0015a3cadb5",
+      "lib/screens/settings/settings_screen.dart": "eb184285eead2fdd17782c50e296c30f24163d56756ae0b65cd627f93a4a910a",
+      "lib/core/constants/app_colors.dart": "8c7653e5dfd726a9b05e08fe0c01187c365ce0fe8de22324b2b36fd9f9f4dca8",
+      "lib/core/constants/app_constants.dart": "04abe7211a909bff62cb0da8c110c67168465ec342737aa5455ed066351f1db9",
+      "lib/core/constants/app_strings.dart": "1e615ef730ece9a71e9ff06a3bf1d5cba757e7871e19f48f0cc9ed1f72c4dd94",
+      "lib/core/models/app_settings.dart": "4a3addf2962ebadd4f806f0e65b93b2b58d464b597bbba4c85faf706e1921560",
+      "lib/core/models/recognition_ui_state.dart": "beacb7365facbc49b6ff3b028c39f6c0d55d855edcd04bc75f37eb6eacd21910",
+      "lib/core/theme/app_theme.dart": "0931b15e06cbe3e8ba50c8b073752682d68b172c33b4fab9280293afa60ca91a",
+      "test/app_navigation_test.dart": "41722796e8bdac57409272419a51ab1c649249852f5651621e95e33dc4bdd33a",
+      "test/integration_regression_test.dart": "738d997e9be75adc2434e86cc0ce79f7839f916b61915701a5352611a4eae79d",
+      "test/mobile_flow_test.dart": "65ccd766008bd0d70ca338c3ad40eb4ed112149094400d0020ae0b703af4e54d",
+      "test/recognition_widgets_test.dart": "e8e511bebb96287ffd6bbffa87f1f3b37168a468cbcf1f5d1a2b23570afbd954",
+      "test/speech_rate_touch_test.dart": "19704b17e2a8f190a232d796842ddee26cc355531918088713334b8ab605ac7d",
+      "test/controllers/recognition_controller_test.dart": "69ca832e8d7b419ee1d795d78103d7ab4322bacc99b531c40fec87e0486a8586",
+      "test/controllers/scan_session_test.dart": "75cc3db56b6550832c82bd378c4ad7e1e83f3e1f04c52742f3a1061c494c266b",
+      "test/services/camera_capabilities_test.dart": "c2e4eb1c7ec23da9e8df40ae5a5364303ee2067fd7d903b1bc05fc6459485688",
+      "test/services/frame_pacing_test.dart": "24f40fb1439a8f0d90435586447a31d1f94c68dae538e23c2900bca0d6a6c344",
+      "test/services/image_quality_horizontal_test.dart": "17600d4e4569c81c240915779e71e4dcf01d1ed2741771e95a5a5ee6e30f5136",
+      "test/services/model_asset_file_test.dart": "66727f16c2b6759324c724193eb20aab84d4fddd2a1381bc7a5c90e2633b8779",
+      "test/services/native_backend_test.dart": "9173f60167cb7b6c8b5eff0399aac25aa8ea351dab081bd1648a03087e3276e0",
+      "test/services/persistent_worker_test.dart": "d4c13143f3a6b41035d6fb4540b649b8784d8ec0dcd201144fadb0e2ffe7e31b",
+      "test/services/speech_service_test.dart": "fdbbcadb606cefc5851b6e528b2a60d6bd87514ad74f617710835d764912f1ea",
+      "test/support/app_fakes.dart": "f350adda7ffcaddf38c88f6f2576fc67c918ae92f0b0700fd137ef91636eafee",
+      "test/support/camera_fixtures.dart": "3368179551cbd2c3fdfcc00ca521c0247b363d227126d83976361200c4be6ad7",
+      "test/utils/image_converter_test.dart": "6e6eb281bcf4399452930145a620edcbf38ed5d4c3ed82a141ca144252528e96",
+      "test/utils/model_contract_test.dart": "033ed35c08d9ad0df888cbd3377be4abeafa8980c6c80c4420d3c54fa9ecc340",
+      "scripts/benchmark_app.ps1": "fe8486fe2cd6d4406bfea1aafcf05f5d297d82ad63b900c3521765519aa2c09b",
+      "scripts/build_release.ps1": "52f0be91fbf1a949fbb8174456402833bd2ba0fe9da07fd281cfa4329352bb46",
+      "scripts/check_idle_memory.ps1": "96474879c05b01376474315081f9268f55d91b7cab8cabd87b3c560825bcd86f",
+      "scripts/write_optimization_report.py": "d07086b730a2f5445df6c8faa48ebf31777cdd26ab282d94849b6b91bbf72385",
+      "android/build.gradle.kts": "6368860026b4bd255222ffeb9d8f2bae9554df40c857c45338630eb20b46988a",
+      "android/gradle.properties": "f6566b57bb1450c693576ff7f33825adfe12026151e8e575b9ce42b8063e7119",
+      "android/plugin-compatibility.gradle": "f1fa5631506d73758ad3cf3a0ba84021794819922927cc39537fbf4a8117927d",
+      "android/settings.gradle.kts": "a9b5756048f668d4ebf355116678fd334cd5f2169b7d4518ad19b8df14d3af36",
+      "android/app/build.gradle.kts": "e6c3e07f3143a3e0561d91eb8dc7552c03feeec251a92e9c20b4a7d2d9f79a17",
+      "android/gradle/wrapper/gradle-wrapper.properties": "4566bdfe046c74dd7aa93fa2494e914d29b7b14c86064c2c35885c3603bf117d",
+      "android/app/src/main/kotlin/com/example/app_ho_tro_nguoi_khiem_thi/MainActivity.kt": "dde6442111163c675600cf4564527e10a66a2875e0c230ea9577ee7ac1df0c49"
+    },
+    "git_status": "M .gitignore\n M README.md\n M android/app/build.gradle.kts\n M android/app/src/main/kotlin/com/example/app_ho_tro_nguoi_khiem_thi/MainActivity.kt\n M android/plugin-compatibility.gradle\n M lib/controllers/recognition_controller.dart\n M lib/controllers/scan_session.dart\n M lib/services/camera_service.dart\n M lib/services/detector_service.dart\n M lib/services/mock_money_detector.dart\n M lib/services/money_detector.dart\n M lib/services/scan_backend.dart\n M lib/services/scan_backend_native.dart\n M lib/services/speech_service.dart\n M lib/utils/image_converter.dart\n M pubspec.lock\n M scripts/build_release.ps1\n M test/controllers/recognition_controller_test.dart\n M test/controllers/scan_session_test.dart\n M test/integration_regression_test.dart\n M test/mobile_flow_test.dart\n M test/services/native_backend_test.dart\n M test/services/speech_service_test.dart\n M test/support/app_fakes.dart\n M test/utils/image_converter_test.dart\n?? lib/main_benchmark.dart\n?? lib/services/camera_capabilities.dart\n?? lib/services/frame_pacing.dart\n?? lib/services/model_asset_file.dart\n?? lib/services/persistent_worker.dart\n?? lib/utils/transferred_frame.dart\n?? reports/\n?? scripts/benchmark_app.ps1\n?? scripts/check_idle_memory.ps1\n?? scripts/write_optimization_report.py\n?? test/services/camera_capabilities_test.dart\n?? test/services/frame_pacing_test.dart\n?? test/services/model_asset_file_test.dart\n?? test/services/persistent_worker_test.dart\n?? tools/",
+    "web_build_passed": true
+  }
+}

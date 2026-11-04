@@ -23,3 +23,8 @@ android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
 .DS_Store
 Thumbs.db
 /android/.kotlin/
+/tools/web_runtime/node_modules/
+
+# Local report build artifacts
+/reports/**/*.apk
+/reports/**/*.zip

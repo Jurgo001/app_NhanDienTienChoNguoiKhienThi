@@ -1,5 +1,6 @@
 param(
     [string]$FlutterSdk = 'D:\sdk_flutter\flutter',
+    [switch]$UniversalApk,
     [string]$ScratchRoot = (Join-Path ([IO.Path]::GetTempPath()) 'money_app_build')
 )
 $ErrorActionPreference = 'Stop'
@@ -59,18 +60,29 @@ try {
         [Environment]::NewLine + 'org.gradle.daemon=false' + [Environment]::NewLine, $encoding)
     Push-Location -LiteralPath $stagingPath
     try {
-        Invoke-Flutter @('pub','get')
-        Invoke-Flutter @('build','apk','--release','--no-pub')
+        Invoke-Flutter -Arguments @('pub','get')
+        $buildArguments = @('build','apk','--release','--no-pub')
+        if (-not $UniversalApk) { $buildArguments += '--split-per-abi' }
+        Invoke-Flutter -Arguments $buildArguments
     } finally {
         Pop-Location
     }
-    $apkSource = Join-Path $stagingPath 'build\app\outputs\flutter-apk\app-release.apk'
+    $apkSourceDirectory = Join-Path $stagingPath 'build\app\outputs\flutter-apk'
     $outputDirectory = Join-Path $projectRoot 'build\app\outputs\flutter-apk'
     New-Item -ItemType Directory -Force -Path $outputDirectory | Out-Null
-    $apkTarget = Join-Path $outputDirectory 'app-release.apk'
-    Copy-Item -LiteralPath $apkSource -Destination $apkTarget -Force
-    Write-Host "APK: $apkTarget" -ForegroundColor Green
-    Write-Host ("SHA256: " + (Get-FileHash -LiteralPath $apkTarget -Algorithm SHA256).Hash)
+    $expectedApks = if ($UniversalApk) { @('app-release.apk') } else {
+        @('app-arm64-v8a-release.apk','app-armeabi-v7a-release.apk','app-x86_64-release.apk')
+    }
+    foreach ($apkName in $expectedApks) {
+        $apkSource = Join-Path $apkSourceDirectory $apkName
+        if (-not (Test-Path -LiteralPath $apkSource -PathType Leaf)) {
+            throw "Khong tim thay APK: $apkSource"
+        }
+        $apkTarget = Join-Path $outputDirectory $apkName
+        Copy-Item -LiteralPath $apkSource -Destination $apkTarget -Force
+        Write-Host "APK: $apkTarget" -ForegroundColor Green
+        Write-Host ("SHA256: " + (Get-FileHash -LiteralPath $apkTarget -Algorithm SHA256).Hash)
+    }
 } finally {
     # Chi xoa DUNG workspace GUID vua tao, khong xoa project hay thu muc ScratchRoot.
     $resolvedStage = [IO.Path]::GetFullPath($stagingPath).TrimEnd('\')
