@@ -86,9 +86,11 @@ class DetectionCsvLogger {
 
     await file.writeAsString(content, flush: true);
 
-    await Share.shareXFiles(
-      [XFile(file.path, mimeType: 'text/csv')],
-      text: 'Dữ liệu kiểm thử AI nhận diện tiền Việt Nam',
+    await SharePlus.instance.share(
+      ShareParams(
+        files: [XFile(file.path, mimeType: 'text/csv')],
+        text: 'Dữ liệu kiểm thử AI nhận diện tiền Việt Nam',
+      ),
     );
   }
 }

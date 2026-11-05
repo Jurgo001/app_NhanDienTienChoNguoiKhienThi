@@ -10,11 +10,13 @@ class MobilePage extends StatelessWidget {
     required this.children,
     this.background = AppColors.canvas,
     this.backLabel,
+    this.onBack,
   });
 
   final List<Widget> children;
   final Color background;
   final String? backLabel;
+  final VoidCallback? onBack;
 
   @override
   Widget build(BuildContext context) {
@@ -36,9 +38,11 @@ class MobilePage extends StatelessWidget {
                           message: 'Quay lại',
                           child: AccessibleButton(
                             label: backLabel!,
+                            semanticLabel: 'Quay lại, ${backLabel!}',
                             icon: Icons.arrow_back,
                             primary: false,
-                            onPressed: () => Navigator.of(context).pop(),
+                            onPressed:
+                                onBack ?? () => Navigator.of(context).pop(),
                           ),
                         ),
                         const SizedBox(height: 24),

@@ -1,94 +1,133 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_strings.dart';
-import '../../widgets/accessible_button.dart';
 import '../../widgets/mobile_page.dart';
 
-class GuideScreen extends StatelessWidget {
+class GuideScreen extends StatefulWidget {
   const GuideScreen({
     super.key,
-    required this.onListen,
-    required this.onStartRecognition,
+    required this.onAutoRead,
+    required this.onReadCompleted,
+    this.onBack,
   });
-  final VoidCallback onListen;
-  final VoidCallback onStartRecognition;
+  final Future<void> Function() onAutoRead;
+  final VoidCallback onReadCompleted;
+  final VoidCallback? onBack;
+
+  @override
+  State<GuideScreen> createState() => _GuideScreenState();
+}
+
+class _GuideScreenState extends State<GuideScreen> {
+  bool _userInteracted = false;
+  String? _speechError;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_readGuide());
+    });
+  }
+
+  Future<void> _readGuide() async {
+    try {
+      await widget.onAutoRead();
+      if (!mounted || _userInteracted) return;
+      // Screen reader users need to control their own navigation.
+      if (MediaQuery.of(context).accessibleNavigation) return;
+      widget.onReadCompleted();
+    } catch (error) {
+      if (mounted) {
+        setState(() => _speechError =
+            'Không thể phát hướng dẫn. Kiểm tra giọng tiếng Việt và âm lượng.');
+      }
+      debugPrint('Guide TTS: $error');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return MobilePage(
-      backLabel: 'Về Menu',
-      children: [
-        Semantics(
-          header: true,
-          child: Text(
-            AppStrings.guideHeading,
-            style: Theme.of(context).textTheme.headlineMedium,
-          ),
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: (_) => _userInteracted = true,
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (notification) {
+          if (notification is ScrollStartNotification ||
+              notification is UserScrollNotification) {
+            _userInteracted = true;
+          }
+          return false;
+        },
+        child: MobilePage(
+          backLabel: 'Quay lại',
+          onBack: widget.onBack,
+          children: [
+            Semantics(
+              header: true,
+              child: Text(
+                AppStrings.guideHeading,
+                style: Theme.of(context).textTheme.headlineMedium,
+              ),
+            ),
+            const SizedBox(height: 26),
+            const _GuideStep(
+              number: 1,
+              title: 'Đưa tờ tiền',
+              detail: 'Đặt một tờ tiền trước camera sau.',
+            ),
+            const _GuideStep(
+              number: 2,
+              title: 'Giữ yên điện thoại',
+              detail:
+                  'Ứng dụng tự mở camera và nhận diện khi camera cùng giọng nói đã sẵn sàng.',
+            ),
+            const _GuideStep(
+              number: 3,
+              title: 'Nghe kết quả',
+              detail:
+                  'Ứng dụng tự động đọc mệnh giá. Đưa tờ tiền ra khỏi camera để quét tờ tiếp theo (hoặc đưa vào lại nếu chưa nghe rõ).',
+            ),
+            const SizedBox(height: 8),
+            const Divider(height: 32, color: AppColors.border),
+            Semantics(
+              header: true,
+              child: Text(
+                'Điều khiển bằng phím âm lượng',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+            ),
+            const SizedBox(height: 20),
+            const _GuideStep(
+              number: 4,
+              title: 'Giữ phím tăng âm lượng (+) trong 3 giây',
+              detail:
+                  'Chuyển giữa chế độ Nhận diện tiền và Đếm tiền. Khi quay lại Đếm tiền, ứng dụng tự đọc tổng cũ và tiếp tục đếm.',
+            ),
+            const _GuideStep(
+              number: 5,
+              title: 'Giữ phím giảm âm lượng (−) trong 3 giây',
+              detail:
+                  'Chỉ dùng khi đang Đếm tiền và muốn bắt đầu phiên mới. Ứng dụng đọc tổng cuối cùng rồi đưa tổng về 0 đồng mà không hỏi xác nhận.',
+            ),
+            const _GuideStep(
+              number: 6,
+              title: 'Nhấn ngắn để điều chỉnh âm lượng',
+              detail:
+                  'Nhấn ngắn + hoặc − để chỉnh âm lượng. Giữ phím chỉ có tác dụng trên màn hình camera khi ứng dụng đang mở.',
+            ),
+            if (_speechError != null)
+              Semantics(
+                liveRegion: true,
+                child: Text(_speechError!,
+                    style: const TextStyle(color: AppColors.navy)),
+              ),
+            const SizedBox(height: 40),
+          ],
         ),
-        const SizedBox(height: 26),
-        const _GuideStep(
-          number: 1,
-          title: 'Đưa tờ tiền',
-          detail: 'Đặt một tờ tiền trước camera sau.',
-        ),
-        const _GuideStep(
-          number: 2,
-          title: 'Giữ yên điện thoại',
-          detail:
-              'Ứng dụng tự mở camera và nhận diện khi camera cùng giọng nói đã sẵn sàng.',
-        ),
-        const _GuideStep(
-          number: 3,
-          title: 'Nghe kết quả',
-          detail:
-              'Ứng dụng tự động đọc mệnh giá. Đưa tờ tiền ra khỏi camera để quét tờ tiếp theo (hoặc đưa vào lại nếu chưa nghe rõ).',
-        ),
-        const SizedBox(height: 8),
-        const Divider(height: 32, color: AppColors.border),
-        Semantics(
-          header: true,
-          child: Text(
-            'Điều khiển bằng phím âm lượng',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-        ),
-        const SizedBox(height: 20),
-        const _GuideStep(
-          number: 4,
-          title: 'Giữ phím tăng âm lượng (+) trong 3 giây',
-          detail:
-              'Chuyển giữa chế độ Nhận diện tiền và Đếm tiền. Khi quay lại Đếm tiền, ứng dụng tự đọc tổng cũ và tiếp tục đếm.',
-        ),
-        const _GuideStep(
-          number: 5,
-          title: 'Giữ phím giảm âm lượng (−) trong 3 giây',
-          detail:
-              'Chỉ dùng khi đang Đếm tiền và muốn bắt đầu phiên mới. Ứng dụng đọc tổng cuối cùng rồi đưa tổng về 0 đồng mà không hỏi xác nhận.',
-        ),
-        const _GuideStep(
-          number: 6,
-          title: 'Nhấn ngắn để điều chỉnh âm lượng',
-          detail:
-              'Nhấn ngắn + hoặc − để chỉnh âm lượng. Giữ phím chỉ có tác dụng trên màn hình camera khi ứng dụng đang mở.',
-        ),
-        const Spacer(),
-        const SizedBox(height: 24),
-        AccessibleButton(
-          key: const Key('listen_guide_button'),
-          label: AppStrings.listenGuide,
-          icon: Icons.volume_up_outlined,
-          primary: false,
-          onPressed: onListen,
-        ),
-        const SizedBox(height: 14),
-        AccessibleButton(
-          key: const Key('start_recognition_button'),
-          label: 'Bắt đầu nhận diện',
-          icon: Icons.photo_camera_outlined,
-          onPressed: onStartRecognition,
-        ),
-      ],
+      ),
     );
   }
 }

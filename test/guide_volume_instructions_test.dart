@@ -8,8 +8,8 @@ void main() {
       (tester) async {
     await tester.pumpWidget(MaterialApp(
       home: GuideScreen(
-        onListen: () {},
-        onStartRecognition: () {},
+        onAutoRead: () async {},
+        onReadCompleted: () {},
       ),
     ));
     expect(find.text('Điều khiển bằng phím âm lượng'), findsOneWidget);

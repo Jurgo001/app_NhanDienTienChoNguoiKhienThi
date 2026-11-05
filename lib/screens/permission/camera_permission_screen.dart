@@ -73,7 +73,7 @@ class _CameraPermissionScreenState extends State<CameraPermissionScreen>
         ? 'Chrome dùng kết quả mô phỏng để thử giao diện và giọng nói. '
             'Chạy trên Android để nhận diện qua camera.'
         : granted
-            ? 'Đã được cấp quyền camera. Về nhận diện và bấm Bắt đầu quét.'
+            ? 'Đã được cấp quyền camera. Quay lại để ứng dụng tự tiếp tục quét.'
             : blocked
                 ? 'Camera đang bị chặn. Mở cài đặt ứng dụng để cấp lại quyền camera.'
                 : 'Ứng dụng dùng camera sau để nhận diện một tờ tiền. '
@@ -82,6 +82,7 @@ class _CameraPermissionScreenState extends State<CameraPermissionScreen>
     return MobilePage(
       background: const Color(0xFFE1E7ED),
       backLabel: 'Về nhận diện',
+      onBack: widget.onContinue,
       children: [
         Semantics(
             header: true,

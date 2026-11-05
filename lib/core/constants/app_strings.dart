@@ -1,19 +1,18 @@
 abstract final class AppStrings {
-  static const spokenGuide =
-      'Hướng dẫn sử dụng ứng dụng nhận diện tiền Việt Nam. '
-      'Bước một. Đưa tờ tiền. '
-      'Đặt một tờ tiền trước camera sau. '
-      'Bước hai. Giữ yên điện thoại. '
-      'Ứng dụng tự mở camera và nhận diện '
-      'khi camera cùng giọng nói đã sẵn sàng. '
-      'Bước ba. Nghe kết quả. '
-      'Ứng dụng tự động đọc mệnh giá. '
-      'Đưa tờ tiền ra khỏi camera để quét tờ tiếp theo. '
-      'Nếu chưa nghe rõ, hãy đưa tờ tiền ra '
-      'rồi đưa vào lại. '
-      'Giữ phím tăng âm lượng ba giây để chuyển chế độ nhận diện và đếm tiền. '
-      'Khi đang đếm, giữ phím giảm âm lượng ba giây để bắt đầu phiên mới. '
-      'Nhấn nhanh các phím để chỉnh âm lượng.';
+  static const spokenGuide = 'Hướng dẫn sử dụng ứng dụng Đọc Tiền Việt. '
+      'Bước một. Đưa tờ tiền. Đặt một tờ tiền trước camera sau. '
+      'Bước hai. Giữ yên điện thoại. Ứng dụng tự mở camera và nhận diện khi camera '
+      'cùng giọng nói đã sẵn sàng. '
+      'Bước ba. Nghe kết quả. Ứng dụng tự động đọc mệnh giá. Đưa tờ tiền ra khỏi '
+      'camera để quét tờ tiếp theo (hoặc đưa vào lại nếu chưa nghe rõ). '
+      'Bước bốn. Giữ phím tăng âm lượng (+) trong 3 giây. Chuyển giữa chế độ Nhận '
+      'diện tiền và Đếm tiền. Khi quay lại Đếm tiền, ứng dụng tự đọc tổng cũ và '
+      'tiếp tục đếm. '
+      'Bước năm. Giữ phím giảm âm lượng (−) trong 3 giây. Chỉ dùng khi đang Đếm '
+      'tiền và muốn bắt đầu phiên mới. Ứng dụng đọc tổng cuối cùng rồi đưa tổng về '
+      '0 đồng mà không hỏi xác nhận. '
+      'Bước sáu. Nhấn ngắn để điều chỉnh âm lượng. Nhấn ngắn + hoặc − để chỉnh âm '
+      'lượng. Giữ phím chỉ có tác dụng trên màn hình camera khi ứng dụng đang mở. ';
   static const appTitle = 'Nhận diện tiền Việt Nam';
   static const recognitionTitle = 'Nhận diện mệnh giá';
   static const simulationBanner =

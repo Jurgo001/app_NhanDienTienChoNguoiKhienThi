@@ -9,8 +9,6 @@ Widget _screen(RecognitionUiState state) {
     home: RecognitionScreen(
       state: state,
       onOpenSettings: () {},
-      onOpenGuide: () {},
-      onOpenPermission: () {},
     ),
   );
 }
@@ -130,7 +128,7 @@ void main() {
       ),
     );
     expect(tester.takeException(), isNull);
-    await tester.ensureVisible(find.text(AppStrings.guideTitle));
+    await tester.ensureVisible(find.byKey(const Key('open_settings_button')));
     await tester.pump();
     expect(tester.takeException(), isNull);
   });

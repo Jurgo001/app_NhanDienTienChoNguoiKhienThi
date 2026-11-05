@@ -15,8 +15,8 @@ class RecognitionScreen extends StatelessWidget {
     super.key,
     required this.state,
     required this.onOpenSettings,
-    required this.onOpenGuide,
-    required this.onOpenPermission,
+    this.onRecoverCamera,
+    this.cameraPermissionMissing = false,
     this.isMoneyCounting = false,
     this.totalVnd = 0,
     this.noteCount = 0,
@@ -29,8 +29,8 @@ class RecognitionScreen extends StatelessWidget {
 
   final RecognitionUiState state;
   final VoidCallback onOpenSettings;
-  final VoidCallback onOpenGuide;
-  final VoidCallback onOpenPermission;
+  final VoidCallback? onRecoverCamera;
+  final bool cameraPermissionMissing;
   final bool isMoneyCounting;
   final int totalVnd;
   final int noteCount;
@@ -47,26 +47,16 @@ class RecognitionScreen extends StatelessWidget {
             ? AppStrings.scanningNoResult
             : AppStrings.scanningNoResultReal)
         : AppStrings.noResult;
-    final cameraHeight =
-        (MediaQuery.sizeOf(context).height * .40).clamp(230.0, 360.0);
+    final viewportHeight = MediaQuery.sizeOf(context).height;
+    // Counting adds a card; use a shorter preview to keep controls visible.
+    final cameraHeight = isMoneyCounting
+        ? (viewportHeight * .27).clamp(185.0, 255.0)
+        : (viewportHeight * .34).clamp(220.0, 325.0);
 
     return MobilePage(
       background: AppColors.navySoft,
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(child: RecognitionStatus(state: state)),
-            const SizedBox(width: 12),
-            Expanded(
-              child: AccessibleButton(
-                label: AppStrings.settingsTitle,
-                primary: false,
-                onPressed: onOpenSettings,
-              ),
-            ),
-          ],
-        ),
+        RecognitionStatus(state: state),
         const SizedBox(height: 12),
         if (isMoneyCounting) ...[
           const SizedBox(height: 12),
@@ -189,25 +179,31 @@ class RecognitionScreen extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: const TextStyle(color: Colors.white, fontSize: 18))),
         const Spacer(),
-        const SizedBox(height: 12),
-        Wrap(
-          alignment: WrapAlignment.spaceBetween,
-          spacing: 8,
-          children: [
-            TextButton.icon(
-              onPressed: onOpenPermission,
-              style: TextButton.styleFrom(foregroundColor: Colors.white),
-              icon: const Icon(Icons.photo_camera_outlined, size: 18),
-              label: const Text(AppStrings.cameraPermissionTitle),
+        const SizedBox(height: 20),
+        if (cameraPermissionMissing && !isMockBackend) ...[
+          SizedBox(
+            height: 74,
+            child: AccessibleButton(
+              key: const Key('recover_camera_permission_button'),
+              label: 'Khắc phục quyền camera',
+              icon: Icons.lock_open,
+              onPressed: onRecoverCamera,
             ),
-            TextButton.icon(
-              onPressed: onOpenGuide,
-              style: TextButton.styleFrom(foregroundColor: Colors.white),
-              icon: const Icon(Icons.menu_book_outlined, size: 18),
-              label: const Text(AppStrings.guideTitle),
-            ),
-          ],
+          ),
+          const SizedBox(height: 14),
+        ],
+        ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 78),
+          child: AccessibleButton(
+            key: const Key('open_settings_button'),
+            label: AppStrings.settingsTitle,
+            semanticLabel: 'Mở tùy chọn và hướng dẫn sử dụng',
+            icon: Icons.settings_outlined,
+            primary: false,
+            onPressed: onOpenSettings,
+          ),
         ),
+        const SizedBox(height: 28),
         if (debugControls != null)
           Theme(
             data: Theme.of(context).copyWith(dividerColor: Colors.transparent),

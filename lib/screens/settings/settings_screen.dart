@@ -13,17 +13,20 @@ class SettingsScreen extends StatelessWidget {
     required this.onVibrationChanged,
     required this.onSpeechRateChanged,
     required this.onOpenGuide,
+    this.onBack,
   });
 
   final AppSettings settings;
   final ValueChanged<bool> onVibrationChanged;
   final ValueChanged<SpeechRateOption> onSpeechRateChanged;
   final VoidCallback onOpenGuide;
+  final VoidCallback? onBack;
 
   @override
   Widget build(BuildContext context) {
     return MobilePage(
-      backLabel: 'Về nhận diện',
+      backLabel: 'Quay lại camera',
+      onBack: onBack,
       children: [
         Semantics(
           header: true,
@@ -32,14 +35,18 @@ class SettingsScreen extends StatelessWidget {
             style: Theme.of(context).textTheme.headlineMedium,
           ),
         ),
-        const SizedBox(height: 24),
-        AccessibleButton(
-          label: AppStrings.listenGuide,
-          icon: Icons.menu_book_outlined,
-          primary: false,
-          onPressed: onOpenGuide,
+        const SizedBox(height: 30),
+        ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 78),
+          child: AccessibleButton(
+            key: const Key('open_guide_button'),
+            label: 'Hướng dẫn sử dụng',
+            icon: Icons.menu_book_outlined,
+            primary: false,
+            onPressed: onOpenGuide,
+          ),
         ),
-        const SizedBox(height: 28),
+        const SizedBox(height: 32),
         Text(AppStrings.vibration,
             style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 10),
@@ -49,7 +56,7 @@ class SettingsScreen extends StatelessWidget {
           value: settings.vibrationEnabled,
           onChanged: onVibrationChanged,
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 30),
         Text(AppStrings.speechRate,
             style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 12),
@@ -74,7 +81,7 @@ class SettingsScreen extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 30),
         const Text(
           'Thay đổi được lưu tự động và giữ lại khi mở ứng dụng.',
           style: TextStyle(color: AppColors.muted, height: 1.5),
@@ -107,7 +114,7 @@ class SettingsScreen extends StatelessWidget {
           child: InkWell(
             onTap: () => onChanged(!value),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: 64),
+              constraints: const BoxConstraints(minHeight: 80),
               child: Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -164,7 +171,7 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: 64),
+              constraints: const BoxConstraints(minHeight: 80),
               child: Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
