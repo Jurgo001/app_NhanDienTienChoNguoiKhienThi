@@ -74,7 +74,8 @@ Sau khi chọn đúng JDK và hoàn tất chuẩn bị:
 # APK: build\app\outputs\flutter-apk\app-debug.apk
 
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\build_release.ps1
-# APK: build\app\outputs\flutter-apk\app-release.apk
+# APK ARM64: build\app\outputs\flutter-apk\app-arm64-v8a-release.apk
+# Ngoài ra có bản armeabi-v7a và x86_64. Thêm -UniversalApk nếu cần APK chung.
 ```
 
 Với đường dẫn có dấu hiện tại, script release tạo bản sao source trong thư mục TEMP không dấu, build rồi chép APK về đúng đường dẫn trên và dọn bản sao. Không tạo ổ ảo hoặc di chuyển project. Nếu SDK nằm nơi khác, thêm tham số -FlutterSdk "C:\src\flutter". SDK Flutter cũng cần nằm trong thư mục không dấu.
@@ -157,3 +158,21 @@ Chỉ chạy từng lệnh một trên Android; nhấn `q` trước khi đổi m
 ```
 
 Màn TV2 riêng có công tắc MOCK phục vụ chẩn đoán; app chính Android luôn dùng model thật. Báo cáo [INTEGRATION_REVIEW.md](INTEGRATION_REVIEW.md) ghi lại hiện trạng **trước khi sửa**.
+
+## Tối ưu tài nguyên và đo đối chiếu
+
+Luồng AI dùng một worker isolate cho cả phiên; truyền ảnh bằng TransferableTypedData và tái sử dụng buffer đầu vào. Nhịp xử lý mặc định là 120 ms, tăng lên 300 ms sau 3 frame không có tiền và 240 ms khi đã đọc kết quả hoặc cần chỉnh camera liên tiếp. Một kết quả hợp lệ đưa nhịp xử lý về 120 ms. Giữ nguyên model, ngưỡng confidence và xác nhận 3 frame.
+
+TTS ưu tiên mệnh giá hơn hướng dẫn/flash, gộp câu trùng đang đọc và chỉ đổi tốc độ khi cần. Đóng gói release bật thu gọn mã/tài nguyên, giữ model không nén và script xuất APK riêng từng ABI.
+
+Chạy bài đo suy luận với ảnh YUV cố định trên cùng thiết bị, cùng chế độ debug:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/benchmark_app.ps1 -Label after
+```
+
+Kết quả và bản source trước tối ưu nằm trong `reports/SauKhiToiUu/`. Bài đo ảnh cố định không đánh giá độ chính xác trên tiền thật, pin hoặc độ trễ camera/TTS. Dùng điện thoại thật để kiểm chứng các chỉ số này.
+
+Model được nạp từ file tạm có quản lý vòng đời thay vì buffer native. Khi ngừng quét/release camera quá 15 giây, backend giải phóng cả worker và interpreter; quay lại sẽ nạp lại. Trên Android, đường dẫn file tạm được xóa sau khi model đã được ánh xạ để tránh tích tụ cache khi hệ điều hành đóng app.
+
+Camera kiểm tra FLASH_INFO_AVAILABLE qua Android Camera2 trước khi bật đèn. Webcam/camera không có flash tiếp tục quét và không đăng ký cảm biến lux dành riêng cho auto-flash.

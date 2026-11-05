@@ -46,6 +46,8 @@ class ScanSession extends ChangeNotifier {
             await backend.stop(releaseCamera: true);
             return;
           }
+          backend.setRecognitionLocked(
+              recognition.state.status == RecognitionUiStatus.lockedAnnounced);
           await backend.start((result) => _receive(token, result));
           if (_current(token)) recognition.announceScanningPrompt();
         } catch (error) {
@@ -64,6 +66,7 @@ class ScanSession extends ChangeNotifier {
     if (!_current(token)) return;
     recognition.processDetection(result);
     final status = recognition.state.status;
+    backend.setRecognitionLocked(status == RecognitionUiStatus.lockedAnnounced);
     if (status != RecognitionUiStatus.error) return;
     // Không await stop từ callback frame: stop phải đợi chính frame này kết thúc.
     unawaited(_enqueue(() async {

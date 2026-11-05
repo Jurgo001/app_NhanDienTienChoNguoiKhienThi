@@ -4,6 +4,7 @@ import 'package:camera_platform_interface/camera_platform_interface.dart' as cp;
 import 'package:app_ho_tro_nguoi_khiem_thi/utils/image_converter.dart';
 import 'package:app_ho_tro_nguoi_khiem_thi/utils/yolo_decoder.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:app_ho_tro_nguoi_khiem_thi/utils/transferred_frame.dart';
 
 CameraImage colorImage() =>
     CameraImage.fromPlatformInterface(cp.CameraImageData(
@@ -127,5 +128,68 @@ void main() {
         .single;
     expect(box.y1, closeTo(.2, .001));
     expect(box.y2, closeTo(.8, .001));
+  });
+  test('Reused buffers preserve every pixel and letterbox across rotations',
+      () {
+    final frame = FrameData.fromPlanes(
+      width: 4,
+      height: 2,
+      format: ImageFormatGroup.bgra8888,
+      planes: [
+        FramePlane.fromBytes(
+          Uint8List.fromList(List.generate(32, (i) => (i * 17) % 256)),
+          rowStride: 16,
+          pixelStride: 4,
+        )
+      ],
+    );
+    final buffer = Float32List(4 * 4 * 3)..fillRange(0, 48, double.nan);
+    for (final channelsFirst in [true, false]) {
+      for (final rotation in [0, 90, 180, 270]) {
+        final expected = ImageConverter.convertFrame(
+          frame: frame,
+          rotation: rotation,
+          targetSize: 4,
+          isChannelsFirst: channelsFirst,
+          useLetterbox: true,
+        );
+        final reused = ImageConverter.convertFrame(
+          frame: frame,
+          rotation: rotation,
+          targetSize: 4,
+          isChannelsFirst: channelsFirst,
+          useLetterbox: true,
+          outputBuffer: buffer,
+        );
+        expect(identical(reused.inputBuffer, buffer), isTrue);
+        expect(reused.inputBuffer, expected.inputBuffer);
+        expect(reused.meanBrightness, expected.meanBrightness);
+        expect(reused.padX, expected.padX);
+        expect(reused.padY, expected.padY);
+      }
+    }
+  });
+
+  test('Transferred frame is a snapshot independent of camera plane reuse', () {
+    final image = colorImage();
+    final expected = List<int>.from(image.planes.first.bytes);
+    final transferred = TransferredFrame.fromCamera(image);
+    image.planes.first.bytes.fillRange(0, image.planes.first.bytes.length, 0);
+    final frame = transferred.materialize();
+    expect(frame.planes.single.bytes, expected);
+    expect(frame.planes.single.rowStride, 8);
+    expect(frame.planes.single.pixelStride, 4);
+    expect(() => transferred.materialize(), throwsA(isA<ArgumentError>()));
+  });
+
+  test('Wrong-sized output buffers are rejected before preprocessing', () {
+    expect(
+        () => ImageConverter.convertFrame(
+              frame: FrameData.fromCamera(colorImage()),
+              rotation: 0,
+              targetSize: 2,
+              outputBuffer: Float32List(1),
+            ),
+        throwsArgumentError);
   });
 }

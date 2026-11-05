@@ -26,13 +26,15 @@ android {
         versionName = flutter.versionName
     }
 
-    // Không nén file model TFLite khi build APK
+    // Preserve fast model access; distribution size is reduced using ABI splits.
     androidResources {
         noCompress += listOf("tflite", "lite")
     }
 
     buildTypes {
         release {
+            isMinifyEnabled = true
+            isShrinkResources = true
             // Keep local release runs possible until the team configures signing.
             signingConfig = signingConfigs.getByName("debug")
         }

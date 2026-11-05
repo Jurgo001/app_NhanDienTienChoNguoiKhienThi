@@ -47,6 +47,13 @@ class MemoryCamera extends CameraService {
 class MemoryDetector implements DetectorService {
   bool initialized = false, disposed = false;
   int? rotation;
+  int resourceReleases = 0;
+  @override
+  Future<void> releaseResources() async {
+    resourceReleases++;
+    initialized = false;
+  }
+
   Object? error;
   Completer<DetectionResult>? gate;
   @override
@@ -80,8 +87,13 @@ class MemoryDetector implements DetectorService {
 
 class GrantedBackend extends NativeScanBackend {
   GrantedBackend(
-      {required MemoryCamera camera, required MemoryDetector detector})
-      : super(camera: camera, detector: detector);
+      {required MemoryCamera camera,
+      required MemoryDetector detector,
+      Duration modelIdleTimeout = const Duration(seconds: 15)})
+      : super(
+            camera: camera,
+            detector: detector,
+            modelIdleTimeout: modelIdleTimeout);
   @override
   Future<CameraAccess> permission({bool request = false}) async =>
       CameraAccess.granted;
@@ -140,5 +152,38 @@ void main() {
     await expectLater(backend.dispose(), throwsStateError);
     expect(camera.initialized, isFalse);
     expect(detector.disposed, isTrue);
+  });
+  test('A long pause unloads model resources and resume initializes them again',
+      () async {
+    final camera = MemoryCamera(), detector = MemoryDetector();
+    final backend = GrantedBackend(
+        camera: camera, detector: detector, modelIdleTimeout: Duration.zero);
+    await backend.initialize();
+    await backend.start((_) {});
+    await backend.stop(releaseCamera: true);
+    await Future<void>.delayed(Duration.zero);
+    expect(detector.resourceReleases, 1);
+    expect(detector.initialized, isFalse);
+    await backend.initialize();
+    await backend.start((_) {});
+    await camera.emit();
+    expect(detector.initialized, isTrue);
+    await backend.dispose();
+  });
+
+  test('A quick resume cancels the pending model release', () async {
+    final camera = MemoryCamera(), detector = MemoryDetector();
+    final backend = GrantedBackend(
+        camera: camera,
+        detector: detector,
+        modelIdleTimeout: const Duration(milliseconds: 20));
+    await backend.initialize();
+    await backend.start((_) {});
+    await backend.stop(releaseCamera: true);
+    await backend.initialize();
+    await backend.start((_) {});
+    await Future<void>.delayed(const Duration(milliseconds: 30));
+    expect(detector.resourceReleases, 0);
+    await backend.dispose();
   });
 }

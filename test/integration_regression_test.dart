@@ -29,7 +29,8 @@ class AuditSpeech extends SpeechService {
   Completer<void>? stopGate;
   @override
   Future<void> speak(String text,
-      {SpeechRateOption rate = SpeechRateOption.normal}) async {
+      {SpeechRateOption rate = SpeechRateOption.normal,
+      SpeechPriority priority = SpeechPriority.instruction}) async {
     count++;
   }
 

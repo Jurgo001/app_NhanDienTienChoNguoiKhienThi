@@ -10,8 +10,10 @@
         </intent>
     </queries>
     <application
-        android:label="Nhận diện tiền Việt Nam"
-        android:name="${applicationName}">
+        android:label="Đọc Tiền Việt"
+        android:name="${applicationName}"
+        android:icon="@mipmap/ic_launcher">
+        
         <activity
             android:name=".MainActivity"
             android:exported="true"

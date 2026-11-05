@@ -1,0 +1,271 @@
+{
+  "captured_at": "2026-11-04T11:48:40+07:00",
+  "timezone": "Asia/Ho_Chi_Minh (UTC+07:00)",
+  "workspace": "D:\\nam4Ki1\\app_HoTroNguoiKhienThi",
+  "commit": "7fe3f9a611e04dfcb69552e1c93439bc970fb254",
+  "branch": "main",
+  "git_status": "M .gitignore\n M android/plugin-compatibility.gradle\n M pubspec.lock\n?? tools/",
+  "git_diff": "diff --git a/.gitignore b/.gitignore\nindex fb5320b..39fa723 100644\n--- a/.gitignore\n+++ b/.gitignore\n@@ -22,4 +22,5 @@ android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java\n .vscode/\n .DS_Store\n Thumbs.db\n-/android/.kotlin/\n\\ No newline at end of file\n+/android/.kotlin/\n+/tools/web_runtime/node_modules/\ndiff --git a/android/plugin-compatibility.gradle b/android/plugin-compatibility.gradle\nindex e51b6a3..66911fc 100644\n--- a/android/plugin-compatibility.gradle\n+++ b/android/plugin-compatibility.gradle\n@@ -2,6 +2,10 @@\n subprojects { p ->\n     p.afterEvaluate {\n         if (p.name == 'tflite_flutter') {\n+            // Keep Java bytecode aligned with the Kotlin target below.\n+            p.android.compileOptions.sourceCompatibility = JavaVersion.VERSION_17\n+            p.android.compileOptions.targetCompatibility = JavaVersion.VERSION_17\n+\n             p.tasks.matching {\n                 it.name.startsWith('compile') &&\n                 it.name.endsWith('Kotlin')\ndiff --git a/pubspec.lock b/pubspec.lock\nindex 76966da..a5b4a50 100644\n--- a/pubspec.lock\n+++ b/pubspec.lock\n@@ -233,10 +233,10 @@ packages:\n     dependency: transitive\n     description:\n       name: intl\n-      sha256: \"3df61194eb431efc39c4ceba583b95633a403f46c9fd341e550ce0bfa50e9aa5\"\n+      sha256: \"1ca20c894b1717686a2319b8548763d812bc0aabdac580420a44c5178c57a867\"\n       url: \"https://pub.dev\"\n     source: hosted\n-    version: \"0.20.2\"\n+    version: \"0.20.3\"\n   jni:\n     dependency: transitive\n     description:\n@@ -305,10 +305,10 @@ packages:\n     dependency: transitive\n     description:\n       name: matcher\n-      sha256: dc0b7dc7651697ea4ff3e69ef44b0407ea32c487a39fff6a4004fa585e901861\n+      sha256: \"31bd099b47c10cd1aeb55146a2d46ce0277630ecef3f7dae54ad7873f36696cd\"\n       url: \"https://pub.dev\"\n     source: hosted\n-    version: \"0.12.19\"\n+    version: \"0.12.20\"\n   material_color_utilities:\n     dependency: transitive\n     description:\n@@ -321,10 +321,10 @@ packages:\n     dependency: transitive\n     description:\n       name: meta\n-      sha256: \"1741988757a65eb6b36abe716829688cf01910bbf91c34354ff7ec1c3de2b349\"\n+      sha256: \"307249ce4ff29d58a18e97f6345f539382eb9c9c29ecda628900f31de0443dd9\"\n       url: \"https://pub.dev\"\n     source: hosted\n-    version: \"1.18.0\"\n+    version: \"1.19.0\"\n   mime:\n     dependency: transitive\n     description:\n@@ -630,10 +630,10 @@ packages:\n     dependency: transitive\n     description:\n       name: test_api\n-      sha256: \"949a932224383300f01be9221c39180316445ecb8e7547f70a41a35bf421fb9e\"\n+      sha256: \"2a122cbe059f8b610d3a5415f42e255b6c17b1f21eee1d960f31080237fb4f11\"\n       url: \"https://pub.dev\"\n     source: hosted\n-    version: \"0.7.11\"\n+    version: \"0.7.12\"\n   tflite_flutter:\n     dependency: \"direct main\"\n     description:\n@@ -694,10 +694,10 @@ packages:\n     dependency: transitive\n     description:\n       name: vector_math\n-      sha256: d530bd74fea330e6e364cda7a85019c434070188383e1cd8d9777ee586914c5b\n+      sha256: fa49e1674cb84acb900141714e6c6e1f9ae099827c24d141430ff6819db4e1bc\n       url: \"https://pub.dev\"\n     source: hosted\n-    version: \"2.2.0\"\n+    version: \"2.4.4\"\n   vibration:\n     dependency: \"direct main\"\n     description:",
+  "sdk": {
+    "frameworkVersion": "3.47.7",
+    "channel": "stable",
+    "repositoryUrl": "https://github.com/flutter/flutter.git",
+    "frameworkRevision": "abaf9c523780a608bd46686fd5e53740a07077f8",
+    "frameworkCommitDate": "2026-10-08 09:51:21 -0700",
+    "engineRevision": "deb287481e3ce9468f3434937ced4240a70539ca",
+    "engineCommitDate": "2026-10-07 17:09:12.000Z",
+    "engineContentHash": "d8a2d6c768c334d53e16277f837970ffa1e2de81",
+    "engineBuildDate": "2026-10-08 00:51:44.552",
+    "dartSdkVersion": "3.13.5",
+    "devToolsVersion": "2.60.0",
+    "flutterVersion": "3.47.7"
+  },
+  "packages": {
+    "camera": "0.11.4",
+    "camera_android_camerax": "0.6.30",
+    "flutter_tts": "4.2.5",
+    "image": "4.12.0",
+    "light_sensor": "3.0.2",
+    "permission_handler": "11.4.0",
+    "share_plus": "13.3.1",
+    "shared_preferences": "2.5.6",
+    "tflite_flutter": "0.11.0",
+    "vibration": "3.2.1"
+  },
+  "artifacts": [
+    {
+      "path": "assets/models/best_float32.tflite",
+      "bytes": 12722283,
+      "MB": 12.722,
+      "MiB": 12.133,
+      "modified": "2026-11-04T10:43:16+07:00",
+      "sha256": "f11dafdda949f1cb12ef570452a6d938529b2adc220a5ef7af05fd7c10533ba6"
+    },
+    {
+      "path": "build/app/outputs/flutter-apk/app-debug.apk",
+      "bytes": 102240478,
+      "MB": 102.24,
+      "MiB": 97.504,
+      "modified": "2026-11-04T11:20:07+07:00",
+      "sha256": "d0618169b8d511335963113d44fbdd70d6404e40bb2e3ef1d4088582ebdf32dc",
+      "zip_breakdown": {
+        "other": {
+          "uncompressed_bytes": 670955,
+          "compressed_bytes": 514224,
+          "files": 510
+        },
+        "dex": {
+          "uncompressed_bytes": 17511520,
+          "compressed_bytes": 6881367,
+          "files": 14
+        },
+        "lib/arm64-v8a": {
+          "uncompressed_bytes": 3811360,
+          "compressed_bytes": 3811360,
+          "files": 5
+        },
+        "lib/armeabi-v7a": {
+          "uncompressed_bytes": 2651700,
+          "compressed_bytes": 2651700,
+          "files": 5
+        },
+        "lib/x86_64": {
+          "uncompressed_bytes": 45448920,
+          "compressed_bytes": 45448920,
+          "files": 6
+        },
+        "assets/flutter_other": {
+          "uncompressed_bytes": 92937757,
+          "compressed_bytes": 29959477,
+          "files": 11
+        },
+        "assets/model": {
+          "uncompressed_bytes": 12722283,
+          "compressed_bytes": 12722283,
+          "files": 1
+        }
+      },
+      "embedded_model_sha256": "f11dafdda949f1cb12ef570452a6d938529b2adc220a5ef7af05fd7c10533ba6"
+    },
+    {
+      "path": "build/app/outputs/flutter-apk/app-release.apk",
+      "bytes": 72902475,
+      "MB": 72.902,
+      "MiB": 69.525,
+      "modified": "2026-10-16T15:38:05+07:00",
+      "sha256": "69b9a0606d55ff4a39c974c9b8630183395849e35c3242ce0a01485fa4e251e6",
+      "zip_breakdown": {
+        "other": {
+          "uncompressed_bytes": 437898,
+          "compressed_bytes": 331595,
+          "files": 389
+        },
+        "dex": {
+          "uncompressed_bytes": 1899604,
+          "compressed_bytes": 860671,
+          "files": 1
+        },
+        "lib/arm64-v8a": {
+          "uncompressed_bytes": 19787584,
+          "compressed_bytes": 19787584,
+          "files": 6
+        },
+        "lib/armeabi-v7a": {
+          "uncompressed_bytes": 16011124,
+          "compressed_bytes": 16011124,
+          "files": 6
+        },
+        "lib/x86_64": {
+          "uncompressed_bytes": 22840016,
+          "compressed_bytes": 22840016,
+          "files": 6
+        },
+        "assets/flutter_other": {
+          "uncompressed_bytes": 144969,
+          "compressed_bytes": 111797,
+          "files": 8
+        },
+        "assets/model": {
+          "uncompressed_bytes": 12722294,
+          "compressed_bytes": 12722294,
+          "files": 1
+        }
+      },
+      "embedded_model_sha256": "e9ba6475885c939b0460a41041a3a6609c5fdcdda2ca847f0b2381ecf6ced3c4"
+    }
+  ],
+  "source_fingerprints": [
+    {
+      "path": "pubspec.yaml",
+      "sha256": "4c04d4c45847de36ec297f4ff2a1c0e454d4094a264db66afe2b1cd9f412d174"
+    },
+    {
+      "path": "pubspec.lock",
+      "sha256": "36d42eabdfa0d3b7a9f52d09ea0bc4e9adb71eb8716f1ff4211d0f5014ed0e5a"
+    },
+    {
+      "path": "lib/services/camera_service.dart",
+      "sha256": "45ff3d4040798b23466b9a533db107a7c4d47d51beff9225d543f9e67f6eacca"
+    },
+    {
+      "path": "lib/services/money_detector.dart",
+      "sha256": "52447292168331142bb55346699fd047499218b9f14d95bc607a8588e5a528ef"
+    },
+    {
+      "path": "lib/utils/image_converter.dart",
+      "sha256": "363d1afbff5bed0ef8eb46a6356f84e42f87c36794ec951b6066bb66d26b0bf0"
+    },
+    {
+      "path": "lib/controllers/recognition_controller.dart",
+      "sha256": "46679768c73e5bf101cd73aa18d15d310e4425f94476958a87a107372bd6b82f"
+    },
+    {
+      "path": "lib/controllers/scan_session.dart",
+      "sha256": "c6a7538e1f5f91f1a73457d35473f7bd84f3499171c8dda71d240992cc4e014f"
+    },
+    {
+      "path": "lib/services/scan_backend_native.dart",
+      "sha256": "869dea31be04aa3be15715ad0421fe65c33f7e011d8b2fe4cfd73f9786b64660"
+    },
+    {
+      "path": "lib/services/speech_service.dart",
+      "sha256": "eac01bfbcf486b7976d46e42bf7e68376edffa4cf94fbecb0719468e6d532b06"
+    },
+    {
+      "path": "lib/core/models/app_settings.dart",
+      "sha256": "4a3addf2962ebadd4f806f0e65b93b2b58d464b597bbba4c85faf706e1921560"
+    },
+    {
+      "path": "android/plugin-compatibility.gradle",
+      "sha256": "f1fa5631506d73758ad3cf3a0ba84021794819922927cc39537fbf4a8117927d"
+    },
+    {
+      "path": "android/app/build.gradle.kts",
+      "sha256": "2207fd8dc32fcb6852f921d253faa4b283d91d4d599fad76abce8c9cfd30778b"
+    },
+    {
+      "path": "android/settings.gradle.kts",
+      "sha256": "a9b5756048f668d4ebf355116678fd334cd5f2169b7d4518ad19b8df14d3af36"
+    },
+    {
+      "path": "android/gradle/wrapper/gradle-wrapper.properties",
+      "sha256": "4566bdfe046c74dd7aa93fa2494e914d29b7b14c86064c2c35885c3603bf117d"
+    },
+    {
+      "path": ".vscode/flutter-terminal.ps1",
+      "sha256": "5c868fc2475986460f8296b7754eca89eb50911a141b5d4b44c0c4068e86f883"
+    }
+  ],
+  "device_list": {
+    "code": 0,
+    "stdout": "List of devices attached\nemulator-5554          device product:sdk_gphone64_x86_64 model:sdk_gphone64_x86_64 device:emu64xa transport_id:9",
+    "stderr": ""
+  },
+  "device": {
+    "model": "sdk_gphone64_x86_64",
+    "release": "16",
+    "sdk": "36",
+    "abi": "x86_64",
+    "avd": "Flutter_API_36",
+    "boot_complete": "1",
+    "pid": "3700",
+    "meminfo": "Applications Memory Usage (in Kilobytes):\nUptime: 1286558 Realtime: 1286558\n\n** MEMINFO in pid 3700 [com.example.app_ho_tro_nguoi_khiem_thi] **\n                   Pss  Private  Private  SwapPss      Rss     Heap     Heap     Heap\n                 Total    Dirty    Clean    Dirty    Total     Size    Alloc     Free\n                ------   ------   ------   ------   ------   ------   ------   ------\n  Native Heap   111258   111148      100     6630   112156   125224    98432    22520\n  Dalvik Heap     6146     6124        0      162     7208     7005     3503     3502\n Dalvik Other     8327     2836       40      223    14060                           \n        Stack     1396     1396        0      132     1400                           \n       Ashmem      141        0        0        0      892                           \n    Other dev      188        0      188        0      484                           \n     .so mmap     3045      304      740       28    36320                           \n    .jar mmap     3665        0      988        0    48896                           \n    .apk mmap    17386      332    16844       76    18564                           \n    .ttf mmap     8374        0     8312        0     8576                           \n    .dex mmap       36        0       16        0      920                           \n    .oat mmap       67        0        0        0     1704                           \n    .art mmap     4648     4100      192     5044    20796                           \n   Other mmap    39416        4    36536        0    43312                           \n      Unknown   129533   126888     2640    24727   130036                           \n        TOTAL   370648   253132    66596    37022   445324   132229   101935    26022\n \n App Summary\n                       Pss(KB)                        Rss(KB)\n                        ------                         ------\n           Java Heap:    10416                          28004\n         Native Heap:   111148                         112156\n                Code:    27664                         126008\n               Stack:     1396                           1400\n            Graphics:        0                              0\n       Private Other:   169104\n              System:    50920\n             Unknown:                                  177756\n \n           TOTAL PSS:   370648            TOTAL RSS:   445324       TOTAL SWAP PSS:    37022\n \n Objects\n               Views:        6         ViewRootImpl:        1\n         AppContexts:        5           Activities:        1\n              Assets:       23        AssetManagers:        0\n       Local Binders:       27        Proxy Binders:       74\n       Parcel memory:       14         Parcel count:       56\n    Death Recipients:        2             WebViews:        0\n \n Native Allocations\n                         Count                       Total(kB)\n                        ------                         ------\n    Other (malloced):      332                             30\n Other (nonmalloced):      102                             73\n \n SQL\n         MEMORY_USED:        0\n  PAGECACHE_OVERFLOW:        0          MALLOC_SIZE:        0\n \n \n Asset Allocations\n    : 1607K\n    : 17K\n    : 21K",
+    "total_pss_kb": 370648,
+    "total_rss_kb": 445324,
+    "camera_evidence": "Active Camera Clients:\n(Camera ID: 10, Cost: 100, PID: 3700, Score: 0, State: 2User Id: 0, Client Package Name: com.example.app_ho_tro_nguoi_khiem_thi, Conflicting Client Devices: {})\n    Client package: com.example.app_ho_tro_nguoi_khiem_thi\n    Device status: ACTIVE\n    Stream configuration:",
+    "camera_stream_observed": "640 x 480 (dumpsys media.camera, camera ID 10, app ACTIVE)"
+  },
+  "avd_config": {
+    "hw.camera.back": "webcam0",
+    "hw.camera.back.orientation": "90",
+    "hw.camera.front": "none",
+    "hw.camera.front.orientation": "90",
+    "hw.cpu.ncore": "4",
+    "hw.gpu.enabled": "no",
+    "hw.gpu.mode": "auto",
+    "hw.ramSize": "2048",
+    "image.sysdir.1": "system-images\\android-36.1\\google_apis_playstore\\x86_64\\"
+  },
+  "effective_ram_mb": "2560",
+  "model_tensor_info": {
+    "identifier": "TFL3",
+    "inputs": [
+      {
+        "shape": [
+          1,
+          3,
+          416,
+          416
+        ],
+        "type": "float32"
+      }
+    ],
+    "outputs": [
+      {
+        "shape": [
+          1,
+          22,
+          3549
+        ],
+        "type": "float32"
+      }
+    ],
+    "fitz_available": false
+  },
+  "previous_verified_run": {
+    "assemble_debug_seconds": 69,
+    "install_seconds": 6.4,
+    "device": "emulator-5554",
+    "mode": "debug",
+    "note": "Observed in earlier verified flutter run in this conversation; single incremental run, not a controlled benchmark."
+  },
+  "measurement_status": {
+    "camera_latency": "not_measured",
+    "end_to_end_latency": "not_measured",
+    "tts_latency": "not_measured",
+    "battery": "not_measured",
+    "physical_device_pss": "not_measured",
+    "release_apk_current_source": "not_built",
+    "accuracy": "not_measured"
+  }
+}

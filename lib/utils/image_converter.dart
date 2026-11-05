@@ -24,6 +24,8 @@ class FramePlane {
       : bytes = Uint8List.fromList(plane.bytes),
         rowStride = plane.bytesPerRow,
         pixelStride = plane.bytesPerPixel ?? 1;
+  FramePlane.fromBytes(this.bytes,
+      {required this.rowStride, required this.pixelStride});
   final Uint8List bytes;
   final int rowStride, pixelStride;
 }
@@ -34,6 +36,11 @@ class FrameData {
         height = image.height,
         format = image.format.group,
         planes = image.planes.map(FramePlane.new).toList();
+  FrameData.fromPlanes(
+      {required this.width,
+      required this.height,
+      required this.format,
+      required this.planes});
   final int width, height;
   final ImageFormatGroup format;
   final List<FramePlane> planes;
@@ -64,6 +71,7 @@ class ImageConverter {
     int targetSize = 416,
     bool isChannelsFirst = true,
     bool useLetterbox = false,
+    Float32List? outputBuffer,
   }) {
     final angle = rotation % 360;
     if (frame.width <= 0 ||
@@ -90,7 +98,11 @@ class ImageConverter {
       oy = (targetSize - dh) ~/ 2;
     }
     final planeSize = targetSize * targetSize;
-    final buffer = Float32List(planeSize * 3);
+    if (outputBuffer != null && outputBuffer.length != planeSize * 3) {
+      throw ArgumentError(
+          'Output buffer must contain exactly ${planeSize * 3} float32 elements.');
+    }
+    final buffer = outputBuffer ?? Float32List(planeSize * 3);
     if (useLetterbox) buffer.fillRange(0, buffer.length, 114 / 255);
     double sum = 0, squared = 0;
     var samples = 0;
