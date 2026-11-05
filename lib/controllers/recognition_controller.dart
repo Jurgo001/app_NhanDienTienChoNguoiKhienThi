@@ -13,13 +13,26 @@ class RecognitionController extends ChangeNotifier {
     required HapticService hapticService,
     required AppSettings Function() getSettings,
     this.onFeedbackError,
-  })  : _speech = speechService,
+    this.isMoneyCounting,
+    this.onStableDenomination,
+    DateTime Function()? clock,
+  })  : _now = clock ?? DateTime.now,
+        _speech = speechService,
         _haptic = hapticService,
         _getSettings = getSettings;
   final SpeechService _speech;
   final HapticService _haptic;
   final AppSettings Function() _getSettings;
   final void Function(Object error)? onFeedbackError;
+  final bool Function()? isMoneyCounting;
+  final String? Function(Denomination)? onStableDenomination;
+  final DateTime Function() _now;
+  bool get _counting => isMoneyCounting?.call() ?? false;
+  DateTime? _absentSince;
+  int _initialEmptyFrames = 0;
+  bool _awaitClearBeforeFirst = false;
+  bool _skipNextPrompt = false;
+  static const countingRemovalDelay = Duration(milliseconds: 1100);
   RecognitionUiState _state =
       const RecognitionUiState(status: RecognitionUiStatus.ready);
   RecognitionUiState get state => _state;
@@ -40,23 +53,35 @@ class RecognitionController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void startScanning({bool isMock = true}) {
+  void startScanning(
+      {bool isMock = true, bool requireClearBeforeAccept = false}) {
     _clearResult();
+    _awaitClearBeforeFirst = requireClearBeforeAccept;
+    _initialEmptyFrames = 0;
     _lastGuidance = null;
     _updateState(RecognitionUiState(
       status: RecognitionUiStatus.scanning,
-      guidance: 'Hãy đưa một tờ tiền vào giữa camera và giữ yên.',
+      guidance: requireClearBeforeAccept
+          ? 'Hãy đưa hết tiền ra khỏi camera để bắt đầu lượt đếm.'
+          : 'Hãy đưa một tờ tiền vào giữa camera và giữ yên.',
       isMock: isMock,
     ));
   }
 
+  /// Dùng sau thông báo đổi chế độ để không đọc liên tiếp hai lời nhắc.
+  void suppressNextScanningPrompt() => _skipNextPrompt = true;
+
   void announceScanningPrompt() {
+    if (_skipNextPrompt) {
+      _skipNextPrompt = false;
+      return;
+    }
     if (_state.status != RecognitionUiStatus.scanning ||
         _disposed ||
         _resultSpeechInProgress) {
       return;
     }
-    _lastGuidance = DateTime.now();
+    _lastGuidance = _now();
     final prompt =
         _state.guidance ?? 'Hãy đưa một tờ tiền vào giữa camera và giữ yên.';
     _runFeedback(() => _speech.speak(prompt,
@@ -97,9 +122,16 @@ class RecognitionController extends ChangeNotifier {
     if (_disposed) return;
     if (_state.status == RecognitionUiStatus.lockedAnnounced) {
       if (result.status == DetectionStatus.noMoney) {
-        if (++_emptyFrames >= requiredEmptyFrames) _beginNextTurn();
+        _absentSince ??= _now();
+        _emptyFrames++;
+        final longEnough = _absentSince != null &&
+            _now().difference(_absentSince!) >= countingRemovalDelay;
+        if (_emptyFrames >= requiredEmptyFrames && (!_counting || longEnough)) {
+          _beginNextTurn();
+        }
       } else if (result.status != DetectionStatus.skippedBusy) {
         _emptyFrames = 0;
+        _absentSince = null;
       }
       return;
     }
@@ -108,6 +140,26 @@ class RecognitionController extends ChangeNotifier {
     if (result.status == DetectionStatus.modelError) {
       showError(result.message ?? 'Không thể chạy mô hình nhận diện',
           isMock: result.isMock);
+      return;
+    }
+    if (_awaitClearBeforeFirst) {
+      if (result.status == DetectionStatus.noMoney) {
+        _absentSince ??= _now();
+        _initialEmptyFrames++;
+        if (_initialEmptyFrames >= requiredEmptyFrames &&
+            _now().difference(_absentSince!) >= countingRemovalDelay) {
+          _awaitClearBeforeFirst = false;
+          _absentSince = null;
+          _updateState(RecognitionUiState(
+            status: RecognitionUiStatus.scanning,
+            guidance: 'Đưa một tờ tiền vào camera và giữ yên.',
+            isMock: result.isMock,
+          ));
+        }
+      } else {
+        _initialEmptyFrames = 0;
+        _absentSince = null;
+      }
       return;
     }
     if (!result.isRecognized ||
@@ -166,7 +218,7 @@ class RecognitionController extends ChangeNotifier {
       _guidanceFrames = 1;
     }
 
-    final now = DateTime.now();
+    final now = _now();
 
     // Cần đủ 3 frame và không đọc cảnh báo quá thường xuyên.
     if (_guidanceFrames < 3 ||
@@ -191,6 +243,9 @@ class RecognitionController extends ChangeNotifier {
 
   void _confirmResult(Denomination denomination, {required bool isMock}) {
     _emptyFrames = 0;
+    _absentSince = null;
+    final spoken =
+        onStableDenomination?.call(denomination) ?? denomination.spokenText;
     _updateState(RecognitionUiState(
       status: RecognitionUiStatus.lockedAnnounced,
       denomination: denomination.displayText,
@@ -204,9 +259,7 @@ class RecognitionController extends ChangeNotifier {
     _runFeedback(() async {
       try {
         await _speech.speak(
-          isMock
-              ? 'Kết quả mô phỏng. ${denomination.spokenText}'
-              : denomination.spokenText,
+          isMock ? 'Kết quả mô phỏng. $spoken' : spoken,
           rate: settings.speechRate,
           priority: SpeechPriority.result,
         );
@@ -225,7 +278,7 @@ class RecognitionController extends ChangeNotifier {
       guidance: 'Hãy đưa một tờ tiền vào giữa camera và giữ yên.',
       isMock: isMock,
     ));
-    announceScanningPrompt();
+    if (!_counting) announceScanningPrompt();
   }
 
   void clearCandidate() {
@@ -237,6 +290,9 @@ class RecognitionController extends ChangeNotifier {
 
   void _clearResult() {
     _emptyFrames = 0;
+    _absentSince = null;
+    _awaitClearBeforeFirst = false;
+    _initialEmptyFrames = 0;
     clearCandidate();
   }
 

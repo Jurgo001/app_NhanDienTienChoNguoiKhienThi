@@ -21,24 +21,24 @@ class DenominationMapper {
 
   /// Danh sách 18 nhãn chuẩn theo đúng thứ tự index 0 -> 17 từ data.yaml.
   static const List<String> classLabels = [
-    '10000_matsau',   // 0
+    '10000_matsau', // 0
     '10000_mattruoc', // 1
-    '1000_matsau',    // 2
-    '1000_mattruoc',  // 3
-    '100k_matsau',    // 4
-    '100k_mattruoc',  // 5
-    '20000_matsau',   // 6
+    '1000_matsau', // 2
+    '1000_mattruoc', // 3
+    '100k_matsau', // 4
+    '100k_mattruoc', // 5
+    '20000_matsau', // 6
     '20000_mattruoc', // 7
-    '2000_matsau',    // 8
-    '2000_mattruoc',  // 9
-    '200k_matsau',    // 10
-    '200k_mattruoc',  // 11
-    '50000_matsau',   // 12
+    '2000_matsau', // 8
+    '2000_mattruoc', // 9
+    '200k_matsau', // 10
+    '200k_mattruoc', // 11
+    '50000_matsau', // 12
     '50000_mattruoc', // 13
-    '5000_matsau',    // 14
-    '5000_mattruoc',  // 15
-    '500k_matsau',    // 16
-    '500k_mattruoc',  // 17
+    '5000_matsau', // 14
+    '5000_mattruoc', // 15
+    '500k_matsau', // 16
+    '500k_mattruoc', // 17
   ];
 
   /// Lấy nhãn gốc từ chỉ số classId.

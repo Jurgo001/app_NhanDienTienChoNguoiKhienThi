@@ -44,6 +44,34 @@ class GuideScreen extends StatelessWidget {
           detail:
               'Ứng dụng tự động đọc mệnh giá. Đưa tờ tiền ra khỏi camera để quét tờ tiếp theo (hoặc đưa vào lại nếu chưa nghe rõ).',
         ),
+        const SizedBox(height: 8),
+        const Divider(height: 32, color: AppColors.border),
+        Semantics(
+          header: true,
+          child: Text(
+            'Điều khiển bằng phím âm lượng',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+        ),
+        const SizedBox(height: 20),
+        const _GuideStep(
+          number: 4,
+          title: 'Giữ phím tăng âm lượng (+) trong 3 giây',
+          detail:
+              'Chuyển giữa chế độ Nhận diện tiền và Đếm tiền. Khi quay lại Đếm tiền, ứng dụng tự đọc tổng cũ và tiếp tục đếm.',
+        ),
+        const _GuideStep(
+          number: 5,
+          title: 'Giữ phím giảm âm lượng (−) trong 3 giây',
+          detail:
+              'Chỉ dùng khi đang Đếm tiền và muốn bắt đầu phiên mới. Ứng dụng đọc tổng cuối cùng rồi đưa tổng về 0 đồng mà không hỏi xác nhận.',
+        ),
+        const _GuideStep(
+          number: 6,
+          title: 'Nhấn ngắn để điều chỉnh âm lượng',
+          detail:
+              'Nhấn ngắn + hoặc − để chỉnh âm lượng. Giữ phím chỉ có tác dụng trên màn hình camera khi ứng dụng đang mở.',
+        ),
         const Spacer(),
         const SizedBox(height: 24),
         AccessibleButton(

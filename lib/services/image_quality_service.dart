@@ -44,7 +44,7 @@ class ImageQualityService {
     }
     return null;
   }
-  
+
   /// Hướng dẫn căn chỉnh ngang dựa trên bounding box YOLO.
   /// Chỉ sử dụng box có độ tin cậy tương đối đáng tin cậy.
   /// Các ngưỡng được chọn để thử nghiệm trên Samsung A15.
@@ -70,7 +70,6 @@ class ImageQualityService {
     return null;
   }
 
-
   /// Trả về câu hướng dẫn hành động bằng tiếng Việt tương ứng với trạng thái.
   static String getGuidanceMessage(DetectionStatus status) {
     switch (status) {
@@ -88,7 +87,7 @@ class ImageQualityService {
         return 'Đưa máy lại gần hơn';
       case DetectionStatus.tooDark:
         return 'Ánh sáng chưa đủ để nhận diện. '
-      'Vui lòng đưa tờ tiền vào vùng sáng hơn.';
+            'Vui lòng đưa tờ tiền vào vùng sáng hơn.';
       case DetectionStatus.tooBright:
         return 'Ảnh bị chói sáng, vui lòng nghiêng nhẹ tờ tiền';
       case DetectionStatus.skippedBusy:

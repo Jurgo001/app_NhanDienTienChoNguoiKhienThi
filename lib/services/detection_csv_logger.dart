@@ -1,4 +1,3 @@
-
 import 'dart:io';
 
 import 'package:path_provider/path_provider.dart';
@@ -24,8 +23,7 @@ class DetectionCsvLogger {
     DetectionResult result, {
     required String modelName,
   }) {
-    if (result.status == DetectionStatus.skippedBusy ||
-        result.isMock) {
+    if (result.status == DetectionStatus.skippedBusy || result.isMock) {
       return;
     }
 
@@ -77,16 +75,14 @@ class DetectionCsvLogger {
 
     final directory = await getTemporaryDirectory();
 
-    final timestamp = DateTime.now()
-        .toIso8601String()
-        .replaceAll(RegExp(r'[:.]'), '-');
+    final timestamp =
+        DateTime.now().toIso8601String().replaceAll(RegExp(r'[:.]'), '-');
 
     final file = File(
       '${directory.path}/ai_detection_$timestamp.csv',
     );
 
-    final content =
-        '\uFEFF$_header\n${_rows.join('\n')}\n';
+    final content = '\uFEFF$_header\n${_rows.join('\n')}\n';
 
     await file.writeAsString(content, flush: true);
 

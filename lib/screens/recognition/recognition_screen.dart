@@ -8,6 +8,7 @@ import '../../widgets/camera_frame.dart';
 import '../../widgets/denomination_card.dart';
 import '../../widgets/mobile_page.dart';
 import '../../widgets/recognition_status.dart';
+import '../../utils/vnd_money_text.dart';
 
 class RecognitionScreen extends StatelessWidget {
   const RecognitionScreen({
@@ -16,6 +17,9 @@ class RecognitionScreen extends StatelessWidget {
     required this.onOpenSettings,
     required this.onOpenGuide,
     required this.onOpenPermission,
+    this.isMoneyCounting = false,
+    this.totalVnd = 0,
+    this.noteCount = 0,
     this.cameraPreview,
     this.isMockBackend = true,
     this.serviceNotice,
@@ -27,6 +31,9 @@ class RecognitionScreen extends StatelessWidget {
   final VoidCallback onOpenSettings;
   final VoidCallback onOpenGuide;
   final VoidCallback onOpenPermission;
+  final bool isMoneyCounting;
+  final int totalVnd;
+  final int noteCount;
   final Widget? cameraPreview;
   final bool isMockBackend;
   final String? serviceNotice;
@@ -60,7 +67,38 @@ class RecognitionScreen extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 12),
+        if (isMoneyCounting) ...[
+          const SizedBox(height: 12),
+          Semantics(
+            container: true,
+            label: 'Tổng tiền hiện tại ${VndMoneyText.spoken(totalVnd)}. '
+                'Đã đếm $noteCount tờ.',
+            child: ExcludeSemantics(
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.navy,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppColors.yellow),
+                ),
+                child: Column(children: [
+                  const Text('TỔNG TIỀN ĐÃ ĐẾM',
+                      style: TextStyle(color: Colors.white70, fontSize: 14)),
+                  Text('${VndMoneyText.digits(totalVnd)}đ',
+                      style: const TextStyle(
+                          color: AppColors.yellow,
+                          fontSize: 30,
+                          fontWeight: FontWeight.bold)),
+                  Text('Đã đếm $noteCount tờ',
+                      style: const TextStyle(color: Colors.white)),
+                ]),
+              ),
+            ),
+          ),
+        ],
+        const SizedBox(height: 12),
         if (isMockBackend)
           const Padding(
             padding: EdgeInsets.only(bottom: 12),
