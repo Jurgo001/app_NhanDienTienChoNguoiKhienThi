@@ -1,6 +1,7 @@
 package com.example.app_ho_tro_nguoi_khiem_thi
 
 import android.content.Context
+import android.view.accessibility.AccessibilityManager
 import android.media.AudioManager
 import android.os.Handler
 import android.os.Looper
@@ -16,6 +17,8 @@ class MainActivity : FlutterActivity() {
     private val holdDurationMs = 3000L
     private val handler = Handler(Looper.getMainLooper())
     private var shortcutsChannel: MethodChannel? = null
+    private var accessibilityChannel: MethodChannel? = null
+    private var explorationListener: AccessibilityManager.TouchExplorationStateChangeListener? = null
     private var captureEnabled = false
     private var countingMode = false
     private var heldKey: Int? = null
@@ -47,12 +50,17 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        // Khi tuy chon phim tat TAT, Android nhan nguyen ven su kien phim am luong.
+        // Khi bat phan hoi ra man hinh (touch exploration), khong chiem phim
+        // de tranh can tro thao tac TalkBack tren dien thoai.
         if (!captureEnabled || !isVolumeKey(event.keyCode)) {
             return super.dispatchKeyEvent(event)
         }
+        val accessibility = getSystemService(Context.ACCESSIBILITY_SERVICE) as AccessibilityManager
+        if (accessibility.isTouchExplorationEnabled) {
+            return super.dispatchKeyEvent(event)
+        }
         val code = event.keyCode
-        // Ngoài chế độ đếm, phím giảm âm lượng luôn thuộc về Android,
-        // trừ khi đang phát hiện tổ hợp hai phím.
         if (code == KeyEvent.KEYCODE_VOLUME_DOWN && !countingMode &&
             heldKey == null && !bothKeysDown) {
             return super.dispatchKeyEvent(event)
@@ -72,7 +80,8 @@ class MainActivity : FlutterActivity() {
                     firstDownTime = event.downTime
                     holdFired = false
                     val task = Runnable {
-                        if (captureEnabled && heldKey == code && !holdFired) {
+                        if (captureEnabled && heldKey == code && !holdFired &&
+                            !accessibility.isTouchExplorationEnabled) {
                             holdFired = true
                             val action = if (code == KeyEvent.KEYCODE_VOLUME_UP)
                                 "volume_up" else "volume_down"
@@ -83,10 +92,10 @@ class MainActivity : FlutterActivity() {
                     handler.postDelayed(task, holdDurationMs)
                     return true
                 }
-                if (heldKey == code) return true // Bỏ sự kiện auto-repeat.
+                if (heldKey == code) return true // Khong tang/giam lien tuc khi BAT phim tat.
                 if (heldKey != null && heldKey != code) {
-                    // Không chiếm tổ hợp hai phím. Cố gắng trả về hệ thống.
-                    // Một số bản Android/TalkBack bắt tổ hợp ở mức OS trước Activity.
+                    // Khong co y chiem to hop 2 phim. Co gang tra lai he thong.
+                    // Tuy nhien khong the bao dam tren moi Android khi tuy chon BAT.
                     val first = heldKey!!
                     val replayDownTime = firstDownTime
                     clearHold()
@@ -105,8 +114,7 @@ class MainActivity : FlutterActivity() {
                     val completedHold = holdFired
                     clearHold()
                     if (!completedHold) {
-                        // Nhấn ngắn: chỉnh đúng một nấc khi THẢ phím.
-                        // Tránh đổi âm lượng liên tục trước khi đủ ba giây.
+                        // Khi BAT phim tat, bam ngan van doi 1 nac am luong.
                         val audio = getSystemService(Context.AUDIO_SERVICE) as AudioManager
                         val direction = if (code == KeyEvent.KEYCODE_VOLUME_UP)
                             AudioManager.ADJUST_RAISE else AudioManager.ADJUST_LOWER
@@ -132,6 +140,13 @@ class MainActivity : FlutterActivity() {
         setCaptureEnabled(false)
         shortcutsChannel?.setMethodCallHandler(null)
         shortcutsChannel = null
+        explorationListener?.let { listener ->
+            val manager = getSystemService(Context.ACCESSIBILITY_SERVICE) as AccessibilityManager
+            manager.removeTouchExplorationStateChangeListener(listener)
+        }
+        explorationListener = null
+        accessibilityChannel?.setMethodCallHandler(null)
+        accessibilityChannel = null
         super.onDestroy()
     }
 
@@ -152,6 +167,29 @@ class MainActivity : FlutterActivity() {
                     result.notImplemented()
                 }
             }
+        }
+        // Touch exploration is the relevant accessibility mode for TalkBack.
+        // Do not query which app/service is enabled or request accessibility permissions.
+        val accessibility = getSystemService(Context.ACCESSIBILITY_SERVICE) as AccessibilityManager
+        accessibilityChannel = MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            "money_recognition/touch_exploration"
+        ).also { channel ->
+            channel.setMethodCallHandler { call, result ->
+                if (call.method == "isTouchExplorationEnabled") {
+                    result.success(accessibility.isTouchExplorationEnabled)
+                } else {
+                    result.notImplemented()
+                }
+            }
+            explorationListener?.let { listener ->
+                accessibility.removeTouchExplorationStateChangeListener(listener)
+            }
+            val listener = AccessibilityManager.TouchExplorationStateChangeListener { enabled ->
+                channel.invokeMethod("onTouchExplorationChanged", enabled)
+            }
+            explorationListener = listener
+            accessibility.addTouchExplorationStateChangeListener(listener)
         }
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,

@@ -89,11 +89,20 @@ class SpeechService {
     await prepare;
     if (token != _request) return;
     _nativeSpeaking = true;
-    final result = await _tts.speak(text);
+    // Audio focus is requested only while app TTS is speaking on Android.
+    // This may reduce overlap with TalkBack; it does not change a11y focus.
+    final result = await _tts.speak(text, focus: true);
     if (token == _request && (result == 0 || result == false)) {
       throw StateError(
           'Không phát được giọng nói. Kiểm tra âm lượng và giọng tiếng Việt.');
     }
+  }
+
+  // Wait for the current app TTS utterance, without stopping or replaying it.
+  // Android TalkBack owns its own queue, which a normal app cannot await.
+  Future<void> waitForCurrentSpeech() async {
+    final current = _activeSpeech;
+    if (current != null) await current;
   }
 
   Future<void> stop() async {

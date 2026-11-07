@@ -10,10 +10,12 @@ class GuideScreen extends StatefulWidget {
     super.key,
     required this.onAutoRead,
     required this.onReadCompleted,
+    this.screenReaderActive = false,
     this.onBack,
   });
   final Future<void> Function() onAutoRead;
   final VoidCallback onReadCompleted;
+  final bool screenReaderActive;
   final VoidCallback? onBack;
 
   @override
@@ -37,7 +39,8 @@ class _GuideScreenState extends State<GuideScreen> {
       await widget.onAutoRead();
       if (!mounted || _userInteracted) return;
       // Screen reader users need to control their own navigation.
-      if (MediaQuery.of(context).accessibleNavigation) return;
+      if (widget.screenReaderActive ||
+          MediaQuery.of(context).accessibleNavigation) return;
       widget.onReadCompleted();
     } catch (error) {
       if (mounted) {
@@ -95,28 +98,28 @@ class _GuideScreenState extends State<GuideScreen> {
             Semantics(
               header: true,
               child: Text(
-                'Điều khiển bằng phím âm lượng',
+                'Điều khiển chế độ và âm lượng',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
             ),
             const SizedBox(height: 20),
             const _GuideStep(
               number: 4,
-              title: 'Giữ phím tăng âm lượng (+) trong 3 giây',
+              title: 'Chuyển chế độ',
               detail:
-                  'Chuyển giữa chế độ Nhận diện tiền và Đếm tiền. Khi quay lại Đếm tiền, ứng dụng tự đọc tổng cũ và tiếp tục đếm.',
+                  'Chọn nút Chuyển sang đếm tiền hoặc Chuyển sang nhận diện tiền trên màn hình camera. Tổng đã đếm luôn được giữ lại khi đổi chế độ.',
             ),
             const _GuideStep(
               number: 5,
-              title: 'Giữ phím giảm âm lượng (−) trong 3 giây',
+              title: 'Tạo phiên đếm mới',
               detail:
-                  'Chỉ dùng khi đang Đếm tiền và muốn bắt đầu phiên mới. Ứng dụng đọc tổng cuối cùng rồi đưa tổng về 0 đồng mà không hỏi xác nhận.',
+                  'Trong chế độ Đếm tiền, chọn Bắt đầu phiên đếm mới rồi xác nhận. Nếu muốn giữ tổng hiện tại, chọn Hủy.',
             ),
             const _GuideStep(
               number: 6,
-              title: 'Nhấn ngắn để điều chỉnh âm lượng',
+              title: 'Phím âm lượng',
               detail:
-                  'Nhấn ngắn + hoặc − để chỉnh âm lượng. Giữ phím chỉ có tác dụng trên màn hình camera khi ứng dụng đang mở.',
+                  'Mặc định, nhấn hoặc giữ phím cộng và trừ để chỉnh âm lượng bình thường. Trong Tùy chọn có thể bật phím tắt giữ ba giây, nhưng khi bật sẽ không giữ phím để chỉnh âm lượng liên tục. Nếu muốn nghe lại mệnh giá, đưa tờ tiền ra khỏi camera, rồi đưa vào lại.',
             ),
             if (_speechError != null)
               Semantics(

@@ -82,7 +82,7 @@ void main() {
         find.byWidgetPredicate((widget) =>
             widget is Semantics &&
             (widget.properties.label
-                    ?.contains(AppStrings.scanningRealMessage) ??
+                    ?.contains('Trạng thái: ${AppStrings.scanningTitle}') ??
                 false)),
         findsOneWidget);
     expect(find.text(AppStrings.scanningNoResultReal), findsOneWidget);

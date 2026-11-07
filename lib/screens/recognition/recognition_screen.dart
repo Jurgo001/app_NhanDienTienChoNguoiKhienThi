@@ -15,6 +15,12 @@ class RecognitionScreen extends StatelessWidget {
     super.key,
     required this.state,
     required this.onOpenSettings,
+    this.onSwitchMode,
+    this.onNewCountingSession,
+    this.onReadCountingTotal,
+    this.screenReaderActive = false,
+    this.preparingCamera = false,
+    this.modeTalkBackAnnouncement,
     this.onRecoverCamera,
     this.cameraPermissionMissing = false,
     this.isMoneyCounting = false,
@@ -29,6 +35,12 @@ class RecognitionScreen extends StatelessWidget {
 
   final RecognitionUiState state;
   final VoidCallback onOpenSettings;
+  final VoidCallback? onSwitchMode;
+  final VoidCallback? onNewCountingSession;
+  final VoidCallback? onReadCountingTotal;
+  final bool screenReaderActive;
+  final bool preparingCamera;
+  final String? modeTalkBackAnnouncement;
   final VoidCallback? onRecoverCamera;
   final bool cameraPermissionMissing;
   final bool isMoneyCounting;
@@ -56,34 +68,52 @@ class RecognitionScreen extends StatelessWidget {
     return MobilePage(
       background: AppColors.navySoft,
       children: [
-        RecognitionStatus(state: state),
+        ExcludeSemantics(
+          // Dynamic camera status is read by the app, not by TalkBack focus.
+          // Controls and non-changing UI labels elsewhere stay accessible.
+          excluding: screenReaderActive,
+          child: RecognitionStatus(
+            state: state,
+            announceChanges: false,
+          ),
+        ),
         const SizedBox(height: 12),
         if (isMoneyCounting) ...[
           const SizedBox(height: 12),
-          Semantics(
-            container: true,
-            label: 'Tổng tiền hiện tại ${VndMoneyText.spoken(totalVnd)}. '
-                'Đã đếm $noteCount tờ.',
-            child: ExcludeSemantics(
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.navy,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.yellow),
+          ExcludeSemantics(
+            // Keep changing totals visible; app TTS announces the count.
+            excluding: screenReaderActive,
+            child: Semantics(
+              container: true,
+              label: 'Tổng tiền hiện tại ${VndMoneyText.spoken(totalVnd)}. '
+                  'Đã đếm $noteCount tờ.',
+              child: ExcludeSemantics(
+                child: GestureDetector(
+                  key: const Key('counting_total_card'),
+                  behavior: HitTestBehavior.opaque,
+                  onTap: screenReaderActive ? null : onReadCountingTotal,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.navy,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: AppColors.yellow),
+                    ),
+                    child: Column(children: [
+                      const Text('TỔNG TIỀN ĐÃ ĐẾM',
+                          style:
+                              TextStyle(color: Colors.white70, fontSize: 14)),
+                      Text('${VndMoneyText.digits(totalVnd)}đ',
+                          style: const TextStyle(
+                              color: AppColors.yellow,
+                              fontSize: 30,
+                              fontWeight: FontWeight.bold)),
+                      Text('Đã đếm $noteCount tờ',
+                          style: const TextStyle(color: Colors.white)),
+                    ]),
+                  ),
                 ),
-                child: Column(children: [
-                  const Text('TỔNG TIỀN ĐÃ ĐẾM',
-                      style: TextStyle(color: Colors.white70, fontSize: 14)),
-                  Text('${VndMoneyText.digits(totalVnd)}đ',
-                      style: const TextStyle(
-                          color: AppColors.yellow,
-                          fontSize: 30,
-                          fontWeight: FontWeight.bold)),
-                  Text('Đã đếm $noteCount tờ',
-                      style: const TextStyle(color: Colors.white)),
-                ]),
               ),
             ),
           ),
@@ -103,81 +133,95 @@ class RecognitionScreen extends StatelessWidget {
               child: const Text('Thử lại âm thanh / cài đặt',
                   style: TextStyle(color: Colors.white))),
         ],
-        SizedBox(
-          height: cameraHeight,
-          child: cameraPreview == null
-              ? CameraFrame(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Flexible(
-                        child: Container(
-                          height: 112,
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE7EFEB),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
+        ExcludeSemantics(
+          // Camera preview and its disappearing placeholder are visual only.
+          excluding: screenReaderActive,
+          child: SizedBox(
+            height: cameraHeight,
+            child: cameraPreview == null
+                ? CameraFrame(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Flexible(
                           child: Container(
-                            alignment: Alignment.center,
+                            height: 112,
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              border: Border.all(
-                                color: const Color(0xFF557166),
-                              ),
-                              borderRadius: BorderRadius.circular(4),
+                              color: const Color(0xFFE7EFEB),
+                              borderRadius: BorderRadius.circular(8),
                             ),
-                            child: const Text(
-                              'TỜ TIỀN',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: AppColors.navy,
-                                fontWeight: FontWeight.w800,
-                                fontSize: 24,
+                            child: Container(
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: const Color(0xFF557166),
+                                ),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Text(
+                                'TỜ TIỀN',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: AppColors.navy,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 24,
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        isMockBackend
-                            ? AppStrings.cameraPlaceholder
-                            : 'Camera chưa mở',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12,
+                        const SizedBox(height: 12),
+                        Text(
+                          isMockBackend
+                              ? AppStrings.cameraPlaceholder
+                              : preparingCamera
+                                  ? 'Đang chuẩn bị camera, vui lòng chờ.'
+                                  : 'Camera chưa mở',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                          ),
                         ),
+                      ],
+                    ),
+                  )
+                : Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      cameraPreview!,
+                      const IgnorePointer(
+                        child: CameraFrame(child: SizedBox.expand()),
                       ),
                     ],
                   ),
-                )
-              : Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    cameraPreview!,
-                    const IgnorePointer(
-                      child: CameraFrame(child: SizedBox.expand()),
-                    ),
-                  ],
-                ),
+          ),
         ),
         const SizedBox(height: 4),
-        DenominationCard(
-          denomination: state.hasResult ? state.denomination : null,
-          isMock: state.isMock,
-          spokenDenomination: state.spokenDenomination,
-          emptyMessage: emptyMessage,
+        ExcludeSemantics(
+          // App TTS owns dynamic money results.
+          excluding: screenReaderActive,
+          child: DenominationCard(
+            announceChanges: false, // Spoken by the app TTS, not liveRegion.
+            denomination: state.hasResult ? state.denomination : null,
+            isMock: state.isMock,
+            spokenDenomination: state.spokenDenomination,
+            emptyMessage: emptyMessage,
+          ),
         ),
         const SizedBox(height: 14),
         if (state.guidance != null &&
             state.status == RecognitionUiStatus.scanning)
           Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: Text(state.guidance!,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.white, fontSize: 18))),
+              child: ExcludeSemantics(
+                  excluding: screenReaderActive,
+                  child: Text(state.guidance!,
+                      textAlign: TextAlign.center,
+                      style:
+                          const TextStyle(color: Colors.white, fontSize: 18)))),
         const Spacer(),
         const SizedBox(height: 20),
         if (cameraPermissionMissing && !isMockBackend) ...[
@@ -191,6 +235,33 @@ class RecognitionScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
+        ],
+        ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 78),
+          child: AccessibleButton(
+            key: const Key('switch_mode_button'),
+            label: isMoneyCounting
+                ? 'Chuyển sang nhận diện tiền'
+                : 'Chuyển sang đếm tiền',
+            semanticLabel: 'Chuyển chế độ',
+            icon: Icons.swap_horiz,
+            onPressed: onSwitchMode,
+          ),
+        ),
+        const SizedBox(height: 12),
+        if (isMoneyCounting) ...[
+          ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 78),
+            child: AccessibleButton(
+              key: const Key('new_counting_session_button'),
+              label: 'Bắt đầu phiên đếm mới',
+              semanticLabel: 'Bắt đầu phiên đếm mới, yêu cầu xác nhận',
+              icon: Icons.restart_alt,
+              primary: false,
+              onPressed: onNewCountingSession,
+            ),
+          ),
+          const SizedBox(height: 12),
         ],
         ConstrainedBox(
           constraints: const BoxConstraints(minHeight: 78),

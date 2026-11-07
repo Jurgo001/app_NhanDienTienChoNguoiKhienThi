@@ -8,6 +8,7 @@ class DenominationCard extends StatelessWidget {
     super.key,
     required this.denomination,
     required this.isMock,
+    this.announceChanges = false,
     this.spokenDenomination,
     this.emptyMessage = AppStrings.noResult,
   });
@@ -15,6 +16,7 @@ class DenominationCard extends StatelessWidget {
   final String? denomination;
   final String? spokenDenomination;
   final bool isMock;
+  final bool announceChanges;
   final String emptyMessage;
 
   @override
@@ -25,7 +27,7 @@ class DenominationCard extends StatelessWidget {
         : emptyMessage;
     return Semantics(
       container: true,
-      liveRegion: true,
+      liveRegion: announceChanges,
       label: label,
       child: ExcludeSemantics(
         child: Container(

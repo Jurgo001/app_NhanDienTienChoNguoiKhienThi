@@ -1,18 +1,17 @@
 abstract final class AppStrings {
   static const spokenGuide = 'Hướng dẫn sử dụng ứng dụng Đọc Tiền Việt. '
       'Bước một. Đưa tờ tiền. Đặt một tờ tiền trước camera sau. '
-      'Bước hai. Giữ yên điện thoại. Ứng dụng tự mở camera và nhận diện khi camera '
-      'cùng giọng nói đã sẵn sàng. '
-      'Bước ba. Nghe kết quả. Ứng dụng tự động đọc mệnh giá. Đưa tờ tiền ra khỏi '
-      'camera để quét tờ tiếp theo (hoặc đưa vào lại nếu chưa nghe rõ). '
-      'Bước bốn. Giữ phím tăng âm lượng (+) trong 3 giây. Chuyển giữa chế độ Nhận '
-      'diện tiền và Đếm tiền. Khi quay lại Đếm tiền, ứng dụng tự đọc tổng cũ và '
-      'tiếp tục đếm. '
-      'Bước năm. Giữ phím giảm âm lượng (−) trong 3 giây. Chỉ dùng khi đang Đếm '
-      'tiền và muốn bắt đầu phiên mới. Ứng dụng đọc tổng cuối cùng rồi đưa tổng về '
-      '0 đồng mà không hỏi xác nhận. '
-      'Bước sáu. Nhấn ngắn để điều chỉnh âm lượng. Nhấn ngắn + hoặc − để chỉnh âm '
-      'lượng. Giữ phím chỉ có tác dụng trên màn hình camera khi ứng dụng đang mở. ';
+      'Bước hai. Giữ yên điện thoại. Ứng dụng tự nhận diện khi camera sẵn sàng. '
+      'Bước ba. Nghe kết quả. Sau khi ứng dụng đọc mệnh giá, đưa tờ tiền ra khỏi camera. '
+      'Muốn nghe lại, đưa chính tờ tiền đó vào camera một lần nữa. '
+      'Bước bốn. Chuyển chế độ. Sử dụng nút Chuyển sang đếm tiền hoặc Chuyển sang nhận diện tiền. '
+      'Khi chuyển chế độ, tổng tiền đã đếm được giữ nguyên. '
+      'Bước năm. Tạo phiên đếm mới. Trong chế độ Đếm tiền, chọn Bắt đầu phiên đếm mới và xác nhận. '
+      'Để giữ tổng hiện tại, chọn Hủy. '
+      'Bước sáu. Phím âm lượng. Mặc định, nhấn hoặc giữ phím âm lượng để chỉnh âm lượng bình thường. '
+      'Có thể bật phím tắt giữ ba giây trong phần Tùy chọn nếu cần, nhưng lúc đó không thể giữ phím để chỉnh âm lượng liên tục. '
+      'Khi bật phím tắt và không dùng TalkBack, giữ phím giảm âm lượng ba giây trong chế độ Đếm tiền sẽ xóa phiên ngay mà không hỏi lại. Khi bật chế độ rà trợ năng, phím tắt này sẽ tạm ngừng. '
+      'Trong chế độ Đếm tiền, có thể rà vào thẻ tổng tiền để biết tổng và số tờ đã đếm. ';
   static const appTitle = 'Nhận diện tiền Việt Nam';
   static const recognitionTitle = 'Nhận diện mệnh giá';
   static const simulationBanner =
