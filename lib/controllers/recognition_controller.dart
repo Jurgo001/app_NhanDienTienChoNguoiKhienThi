@@ -10,6 +10,7 @@ import '../services/image_quality_service.dart';
 class RecognitionController extends ChangeNotifier {
   RecognitionController({
     required SpeechService speechService,
+    this.isTouchExplorationEnabled,
     required HapticService hapticService,
     required AppSettings Function() getSettings,
     this.onFeedbackError,
@@ -21,6 +22,7 @@ class RecognitionController extends ChangeNotifier {
         _haptic = hapticService,
         _getSettings = getSettings;
   final SpeechService _speech;
+  final bool Function()? isTouchExplorationEnabled;
   final HapticService _haptic;
   final AppSettings Function() _getSettings;
   final void Function(Object error)? onFeedbackError;
@@ -31,6 +33,9 @@ class RecognitionController extends ChangeNotifier {
   DateTime? _absentSince;
   int _initialEmptyFrames = 0;
   bool _awaitClearBeforeFirst = false;
+
+  /// True while a previously detected note must leave the frame first.
+  bool get waitingForClearBeforeCounting => _awaitClearBeforeFirst;
   bool _skipNextPrompt = false;
   static const countingRemovalDelay = Duration(milliseconds: 1100);
   RecognitionUiState _state =
@@ -72,6 +77,9 @@ class RecognitionController extends ChangeNotifier {
   void suppressNextScanningPrompt() => _skipNextPrompt = true;
 
   void announceScanningPrompt() {
+    // TalkBack reads camera status when exploring. Avoid talking over
+    // its initial focus announcement. Important detections stay TTS.
+    if (isTouchExplorationEnabled?.call() == true) return;
     if (_skipNextPrompt) {
       _skipNextPrompt = false;
       return;
@@ -91,6 +99,7 @@ class RecognitionController extends ChangeNotifier {
   // Đọc thông báo khi flash tự bật hoặc tự tắt.
   // Sử dụng SpeechService hiện có để giữ chung cấu hình giọng nói.
   void announceFlashStatus(String message) {
+    if (isTouchExplorationEnabled?.call() == true) return;
     // Không đọc nếu controller đã đóng.
     // Không chen ngang lúc đang thông báo mệnh giá tiền.
     if (_disposed ||

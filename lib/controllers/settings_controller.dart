@@ -21,6 +21,8 @@ class SettingsController extends ChangeNotifier {
     }
   }
 
+  Future<void> setHardwareShortcuts(bool value) =>
+      _update(_settings.copyWith(hardwareShortcutsEnabled: value));
   Future<void> setVibration(bool value) =>
       _update(_settings.copyWith(vibrationEnabled: value));
   Future<void> setSpeechRate(SpeechRateOption value) =>

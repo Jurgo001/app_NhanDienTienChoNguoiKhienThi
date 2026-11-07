@@ -45,7 +45,7 @@ void main() {
     expect(find.byType(GuideScreen), findsOneWidget);
     expect(find.byKey(const Key('listen_guide_button')), findsNothing);
     expect(find.byKey(const Key('start_recognition_button')), findsNothing);
-    expect(find.text('Điều khiển bằng phím âm lượng'), findsOneWidget);
+    expect(find.text('Điều khiển chế độ và âm lượng'), findsOneWidget);
   });
 
   testWidgets('TalkBack khong tu dong dong trang huong dan', (tester) async {

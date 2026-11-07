@@ -5,8 +5,13 @@ import '../core/constants/app_strings.dart';
 import '../core/models/recognition_ui_state.dart';
 
 class RecognitionStatus extends StatelessWidget {
-  const RecognitionStatus({super.key, required this.state});
+  const RecognitionStatus({
+    super.key,
+    required this.state,
+    this.announceChanges = false,
+  });
   final RecognitionUiState state;
+  final bool announceChanges;
 
   @override
   Widget build(BuildContext context) {
@@ -39,8 +44,10 @@ class RecognitionStatus extends StatelessWidget {
         state.status == RecognitionUiStatus.error;
     return Semantics(
       container: true,
-      liveRegion: true,
-      label: 'Trạng thái: $title. $message',
+      liveRegion: announceChanges,
+      label: state.status == RecognitionUiStatus.scanning
+          ? 'Trạng thái: $title.'
+          : 'Trạng thái: $title. $message',
       child: ExcludeSemantics(
         child: Container(
           constraints: const BoxConstraints(minHeight: 56),

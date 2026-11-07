@@ -11,6 +11,17 @@ import 'package:app_ho_tro_nguoi_khiem_thi/services/settings_service.dart';
 import 'package:app_ho_tro_nguoi_khiem_thi/services/speech_service.dart';
 
 class MemorySettings extends SettingsService {
+  ({int totalVnd, int noteCount}) storedCount = (totalVnd: 0, noteCount: 0);
+
+  @override
+  Future<({int totalVnd, int noteCount})> loadCountingSession() async =>
+      storedCount;
+
+  @override
+  Future<void> saveCountingSession(int totalVnd, int noteCount) async {
+    storedCount = (totalVnd: totalVnd, noteCount: noteCount);
+  }
+
   AppSettings saved = const AppSettings();
   @override
   Future<AppSettings> loadSettings() async => saved;

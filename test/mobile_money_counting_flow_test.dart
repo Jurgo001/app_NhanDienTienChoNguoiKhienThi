@@ -1,62 +1,54 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:app_ho_tro_nguoi_khiem_thi/models/denomination.dart';
-import 'package:app_ho_tro_nguoi_khiem_thi/models/detection_result.dart';
-import 'package:app_ho_tro_nguoi_khiem_thi/services/hardware_volume_shortcuts.dart';
 import 'support/app_fakes.dart';
 
 void main() {
-  testWidgets('Phim + doi che do, tu tiep tuc tong cu; phim - tao phien moi',
+  testWidgets('V11: chuyển chế độ bằng nút, giữ tổng cũ; reset cần xác nhận',
       (tester) async {
-    final harness = AppHarness();
-    await harness.mount(tester);
+    final h = AppHarness();
+    await h.mount(tester);
 
-    // Không còn nút chuyển chế độ trong giao diện.
-    expect(find.text('Chuyển sang đếm tiền'), findsNothing);
-    expect(find.text('Chuyển sang nhận diện tiền'), findsNothing);
+    // Phím âm lượng nay thuộc Android; màn hình cần nút chuyển chế độ.
+    expect(find.byKey(const Key('switch_mode_button')), findsOneWidget);
+    expect(find.byKey(const Key('new_counting_session_button')), findsNothing);
 
-    // Mô phỏng sự kiện ĐÃ được Android xác nhận là giữ đủ 3 giây.
-    await HardwareVolumeShortcuts.simulateHold(VolumeHoldAction.switchMode);
-    await tester.pumpAndSettle();
-    expect(harness.speech.spoken.last, contains('chế độ đếm tiền'));
+    await tapVisible(tester, find.byKey(const Key('switch_mode_button')));
+    expect(
+        find.byKey(const Key('new_counting_session_button')), findsOneWidget);
+    expect(h.speech.spoken.any((s) => s.contains('chế độ đếm tiền')), isTrue);
 
-    // Khi mới đổi chế độ phải đưa hết tiền ra khỏi camera 1,1 giây.
-    harness.backend.emit(DetectionResult.empty(isMock: false));
-    await tester.runAsync(() => Future<void>.delayed(
-          const Duration(milliseconds: 1250),
-        ));
-    for (var i = 0; i < 4; i++) {
-      harness.backend.emit(DetectionResult.empty(isMock: false));
-    }
-    await tester.pumpAndSettle();
-
-    harness.backend.recognize(Denomination.vnd100000);
+    // Đếm một tờ 100.000 đồng.
+    h.backend.recognize(Denomination.vnd100000);
     await tester.pumpAndSettle();
     expect(find.text('100.000đ'), findsOneWidget);
 
-    await HardwareVolumeShortcuts.simulateHold(VolumeHoldAction.switchMode);
-    await tester.pumpAndSettle();
-    expect(find.text('100.000đ'), findsNothing);
-
-    await HardwareVolumeShortcuts.simulateHold(VolumeHoldAction.switchMode);
-    await tester.pumpAndSettle();
+    // Chuyển đi rồi về không làm mất tổng tiền đã đếm.
+    await tapVisible(tester, find.byKey(const Key('switch_mode_button')));
+    expect(find.byKey(const Key('new_counting_session_button')), findsNothing);
+    await tapVisible(tester, find.byKey(const Key('switch_mode_button')));
     expect(find.text('100.000đ'), findsOneWidget);
-    expect(harness.speech.spoken.last, contains('Tiếp tục phiên trước'));
 
-    // Không cần qua menu hoặc hộp thoại để tạo phiên mới.
-    await HardwareVolumeShortcuts.simulateHold(VolumeHoldAction.newSession);
-    await tester.pumpAndSettle();
+    // Hủy xác nhận không làm mất tiền.
+    await tapVisible(
+        tester, find.byKey(const Key('new_counting_session_button')));
+    expect(find.text('Bắt đầu phiên đếm mới?'), findsOneWidget);
+    await tapVisible(tester, find.text('Hủy'));
+    expect(find.text('100.000đ'), findsOneWidget);
+
+    // Chỉ đặt về 0 sau khi nhấn Xác nhận xóa phiên.
+    await tapVisible(
+        tester, find.byKey(const Key('new_counting_session_button')));
+    await tapVisible(tester, find.text('Xác nhận xóa phiên'));
     expect(find.text('0đ'), findsOneWidget);
-    expect(harness.speech.spoken.last, contains('Đã bắt đầu phiên đếm mới'));
     await unmount(tester);
   });
 
-  testWidgets('Phim - ngoai che do dem khong xoa tong', (tester) async {
-    final harness = AppHarness();
-    await harness.mount(tester);
-    await HardwareVolumeShortcuts.simulateHold(VolumeHoldAction.newSession);
-    await tester.pumpAndSettle();
-    expect(
-        harness.speech.spoken.any((s) => s.contains('phiên đếm mới')), isFalse);
+  testWidgets('V11: không có nút reset khi ở chế độ nhận diện', (tester) async {
+    final h = AppHarness();
+    await h.mount(tester);
+    expect(find.byKey(const Key('switch_mode_button')), findsOneWidget);
+    expect(find.byKey(const Key('new_counting_session_button')), findsNothing);
     await unmount(tester);
   });
 }

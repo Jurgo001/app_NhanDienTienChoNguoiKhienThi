@@ -19,6 +19,7 @@ import 'services/scan_backend.dart';
 import 'services/scan_backend_factory.dart';
 import 'services/settings_service.dart';
 import 'services/speech_service.dart';
+import 'services/touch_exploration_service.dart';
 import 'widgets/mobile_page.dart';
 
 class MoneyRecognitionApp extends StatefulWidget {
@@ -44,6 +45,7 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp>
   bool _permissionRecoveryOpen = false;
   bool _cameraPermissionMissing = false;
   late final SpeechService _speech;
+  late final TouchExplorationService _touchExploration;
   late final HapticService _haptic;
   late final ScanBackend _backend;
   late final SettingsController _settings;
@@ -54,6 +56,9 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp>
   bool _initialized = false, _foreground = true;
   bool _countingMode = false;
   bool _changingMode = false;
+  bool _waitingCameraReady = false;
+  String? _modeTalkBackAnnouncement;
+  bool _resetDialogOpen = false;
   int _routeDepth = 0;
   String? _serviceNotice;
 
@@ -62,14 +67,25 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _speech = widget.speechService ?? SpeechService();
+    _touchExploration = TouchExplorationService();
+    _touchExploration.addListener(_onTouchExplorationChanged);
     _haptic = widget.hapticService ?? HapticService();
     _backend = widget.backend ?? createScanBackend();
-    _settings = SettingsController(widget.settingsService ?? SettingsService());
-    _moneyCounter = MoneyCountingController();
+    final storage = widget.settingsService ?? SettingsService();
+    _settings = SettingsController(storage);
+    _moneyCounter = MoneyCountingController(
+      storage: storage,
+      onStorageError: (error) {
+        if (mounted) {
+          setState(() => _serviceNotice = 'Không lưu được phiên đếm: $error');
+        }
+      },
+    );
     _volumeShortcuts = HardwareVolumeShortcuts(onAction: _onHardwareHold);
     _volumeShortcuts.register();
     _recognition = RecognitionController(
       speechService: _speech,
+      isTouchExplorationEnabled: () => _touchExploration.enabled,
       hapticService: _haptic,
       getSettings: () => _settings.settings,
       isMoneyCounting: () => _countingMode,
@@ -102,9 +118,39 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp>
       errors.add('Không tải được cài đặt đã lưu: ${_describeError(error)}');
     }
     try {
+      // Restore count before the camera can resume scanning.
+      await _moneyCounter.initialize();
+    } catch (error) {
+      errors.add(
+          'Không khôi phục được phiên đếm đã lưu: ${_describeError(error)}');
+    }
+    try {
       await _speech.initialize();
     } catch (error) {
       errors.add('Giọng nói chưa sẵn sàng: ${_describeError(error)}');
+    }
+    // Query accessibility BEFORE starting the camera / startup narration.
+    _touchExploration.updateFallback(
+      WidgetsBinding.instance.platformDispatcher.accessibilityFeatures
+          .accessibleNavigation,
+    );
+    // Native Android normally returns this almost immediately. On widget tests,
+    // the MethodChannel can have no native reply; do NOT block app initialization.
+    // A delayed result can still update the screen-reader mode afterward.
+    try {
+      await _touchExploration.initialize().timeout(
+        const Duration(milliseconds: 700),
+        onTimeout: () {
+          debugPrint('Touch exploration query timed out; using Flutter hint.');
+          _touchExploration.updateFallback(
+            WidgetsBinding.instance.platformDispatcher.accessibilityFeatures
+                .accessibleNavigation,
+          );
+        },
+      );
+    } catch (error) {
+      // Accessibility checks must never prevent opening the camera.
+      debugPrint('Touch exploration initialization failed: $error');
     }
     if (!mounted) return;
     setState(() {
@@ -113,6 +159,22 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp>
     });
     _syncShortcutCapture();
     _start();
+  }
+
+  void _onTouchExplorationChanged() {
+    if (!mounted) return;
+    // If the screen reader was enabled while a Settings/Guide utterance was
+    // active, stop that UI utterance. Never stop a denomination on camera.
+    if (_touchExploration.enabled && _routeDepth > 0) {
+      _run(_speech.stop());
+    }
+    _syncShortcutCapture();
+  }
+
+  @override
+  void didChangeAccessibilityFeatures() {
+    // Native channel is authoritative on Android. General Flutter hint is a
+    // fallback for platforms without the channel, never a TalkBack identifier.
   }
 
   Future<void> _quietFeedback() async {
@@ -226,7 +288,10 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp>
         !_initialized ||
         !_foreground ||
         _routeDepth != 0 ||
-        _changingMode) {
+        _changingMode ||
+        _resetDialogOpen ||
+        !_settings.settings.hardwareShortcutsEnabled ||
+        _touchExploration.enabled) {
       return;
     }
     try {
@@ -249,7 +314,12 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp>
 
   void _syncShortcutCapture() {
     _run(_volumeShortcuts.setEnabled(
-      _initialized && _foreground && _routeDepth == 0,
+      _initialized &&
+          _foreground &&
+          _routeDepth == 0 &&
+          !_resetDialogOpen &&
+          _settings.settings.hardwareShortcutsEnabled &&
+          !_touchExploration.enabled,
       countingMode: _countingMode,
     ));
   }
@@ -259,10 +329,18 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp>
       return;
     }
     _changingMode = true;
-    final hadRecognizedNote = _recognition.state.hasResult;
+
+    final talkBackMode = _touchExploration.enabled;
+    debugPrint('[MODE_A11Y] touch exploration: $talkBackMode');
+    if (mounted) setState(() => _modeTalkBackAnnouncement = null);
+    // Hide preview until the first real AI frame has completed. The preview
+    // opening alone does not prove that the detector can accept a banknote.
+    if (mounted) setState(() => _waitingCameraReady = true);
     try {
-      // Dừng phiên camera để vô hiệu hóa callback từ chế độ cũ.
-      await _session.setVisible(false);
+      // Phase 1: stop the previous image stream; no frame can enter a new
+      // counting session while the mode announcement is still speaking.
+      debugPrint('[MODE_READY] stopping old camera stream');
+      await _session.setVisible(false, releaseCamera: false);
       await _quietFeedback();
       if (!mounted || !_foreground || _routeDepth != 0) return;
 
@@ -271,15 +349,14 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp>
       _syncShortcutCapture();
       _recognition.startScanning(
         isMock: _backend.isMock,
-        requireClearBeforeAccept: enterCounting && hadRecognizedNote,
+        // Entering Counting accepts the first visible note after readiness.
+        // Existing lockedAnnounced state still prevents counting that note twice.
+        requireClearBeforeAccept: false,
       );
       _recognition.suppressNextScanningPrompt();
 
-      // Quay lại Đếm tiền sẽ tự tiếp tục: không hiện hộp thoại hay xóa tổng.
-      final firstNoteInstruction = hadRecognizedNote
-          ? 'Hãy đưa tờ tiền đang ở trước camera ra ngoài, '
-              'chờ camera xác nhận trống rồi đưa vào lại.'
-          : 'Sau thông báo này, đưa từng tờ tiền vào camera để đếm.';
+      const firstNoteInstruction = 'Có thể đặt sẵn một tờ tiền trước camera. '
+          'Vui lòng chờ camera sẵn sàng để bắt đầu đếm.';
       final announcement = enterCounting
           ? (_moneyCounter.hasCounted
               ? 'Đã chuyển sang chế độ đếm tiền. Tiếp tục phiên trước. '
@@ -289,22 +366,188 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp>
               : 'Đã chuyển sang chế độ đếm tiền. Tổng hiện tại không đồng. '
                   '$firstNoteInstruction')
           : 'Đã chuyển sang chế độ nhận diện tiền. '
-              'Tổng tiền phiên đếm vẫn được giữ lại.';
+              'Tổng tiền phiên đếm vẫn được giữ lại. '
+              'Vui lòng chờ thông báo camera sẵn sàng.';
+
+      // With TalkBack, the screen reader owns navigation feedback. Never
+      // play the same mode announcement using a second TTS engine.
+      // Without TalkBack, finish the full app speech before starting camera.
+      // Both TalkBack-on and TalkBack-off users hear this through app TTS.
+      // TalkBack remains responsible only for controls the user explores.
+      // Absolutely no camera stream starts before this await completes.
       try {
+        debugPrint('[MODE_READY] speaking mode announcement');
         await _speech.speak(
           announcement,
           rate: _settings.settings.speechRate,
           priority: SpeechPriority.result,
         );
       } catch (error) {
-        debugPrint('Không đọc được thông báo chuyển chế độ: $error');
+        debugPrint('[MODE_READY] mode speech error: $error');
+      }
+      if (!mounted || !_foreground || _routeDepth != 0) return;
+
+      // Phase 3: restart the camera and wait for an actual processed frame.
+      // Tests/injected backends do not have a real CameraController and are
+      // deliberately not blocked on the native camera readiness signal.
+      final realCamera = widget.backend == null && !_backend.isMock;
+      // The detector may warm up, but callbacks must NOT reach recognition,
+      // counting or result TTS until the ready announcement is over.
+      _session.setModeFeedbackSpeechActive(true);
+      if (realCamera) _session.armCameraReadiness();
+      debugPrint('[MODE_READY] starting camera after announcement');
+      await _session.setVisible(true);
+      if (!mounted || !_foreground || _routeDepth != 0) return;
+
+      if (realCamera) {
+        final ready = _backend.cameraController != null &&
+            (await _session.waitForCameraReadiness(
+              timeout: const Duration(seconds: 8),
+            ));
+        if (!mounted || !_foreground || _routeDepth != 0) return;
+        if (!ready) {
+          final needsClear = _recognition.waitingForClearBeforeCounting;
+          final problem = needsClear
+              ? 'Camera đang chờ bạn đưa tờ tiền cũ ra khỏi khung để tránh cộng trùng.'
+              : 'Camera chưa xử lý được khung hình đầu tiên. Hãy thử mở lại camera.';
+          debugPrint('[MODE_READY] not ready: $problem');
+          setState(() => _serviceNotice = problem);
+          try {
+            await _speech.speak(
+              problem,
+              rate: _settings.settings.speechRate,
+              priority: SpeechPriority.instruction,
+            );
+          } catch (error) {
+            debugPrint('[MODE_READY] readiness error TTS: $error');
+          }
+          return;
+        }
+        if (_serviceNotice?.startsWith('Camera chưa xử lý') == true ||
+            _serviceNotice?.startsWith('Camera đang chờ') == true) {
+          setState(() => _serviceNotice = null);
+        }
+        debugPrint('[MODE_READY] first AI frame processed');
+        // The image stream can warm up during this narration, but the session
+        // gate prevents any result/counting TTS from interrupting it.
+        try {
+          debugPrint('[MODE_READY] speaking camera ready');
+          await _speech.speak(
+            enterCounting
+                ? 'Camera đã sẵn sàng. Bắt đầu đếm tiền.'
+                : 'Camera đã sẵn sàng. Hãy đưa một tờ tiền vào để nhận diện.',
+            rate: _settings.settings.speechRate,
+            priority: SpeechPriority.guidance,
+          );
+        } catch (error) {
+          debugPrint('[MODE_READY] ready announcement error: $error');
+        }
+        if (mounted) setState(() => _waitingCameraReady = false);
       }
     } finally {
-      if (mounted && _foreground && _routeDepth == 0) {
-        await _session.setVisible(true);
+      _session.setModeFeedbackSpeechActive(false);
+      debugPrint('[MODE_READY] recognition results enabled');
+      if (mounted && _waitingCameraReady) {
+        setState(() => _waitingCameraReady = false);
       }
       _changingMode = false;
     }
+  }
+
+  Future<void> _confirmCountingReset() async {
+    if (!mounted ||
+        !_initialized ||
+        !_foreground ||
+        !_countingMode ||
+        _changingMode ||
+        _routeDepth != 0 ||
+        _resetDialogOpen) {
+      return;
+    }
+    final context = _navigatorKey.currentContext;
+    if (context == null) return;
+    _resetDialogOpen = true;
+    _syncShortcutCapture();
+    // Tam ngung NHAN KET QUA, khong dung hoac dispose camera.
+    _session.setResultsSuspended(true);
+    try {
+      await _quietFeedback();
+      if (!mounted || !_foreground || _routeDepth != 0) return;
+      final decision = showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Bắt đầu phiên đếm mới?'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('Tổng hiện tại ${_moneyCounter.totalSpeech}, '
+                  'đã đếm ${_moneyCounter.noteCount} tờ. '
+                  'Xác nhận xóa phiên sẽ đưa tổng tiền về không.'),
+              const SizedBox(height: 24),
+              OutlinedButton(
+                key: const Key('cancel_count_reset_button'),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(0, 72),
+                  textStyle: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.w700),
+                ),
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: const Text('Hủy'),
+              ),
+              const SizedBox(height: 14),
+              FilledButton(
+                key: const Key('confirm_count_reset_button'),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size(0, 72),
+                  textStyle: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.w700),
+                ),
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: const Text('Xác nhận xóa phiên'),
+              ),
+            ],
+          ),
+        ),
+      );
+      if (!_touchExploration.enabled) {
+        _run(_speech.speak(
+          'Bắt đầu phiên đếm mới? Tổng hiện tại '
+          '${_moneyCounter.totalSpeech}. '
+          'Chọn xác nhận xóa phiên để đưa tổng về không, '
+          'hoặc chọn Hủy để giữ tổng tiền.',
+          rate: _settings.settings.speechRate,
+          priority: SpeechPriority.instruction,
+        ));
+      }
+      final shouldReset = await decision;
+      if (!mounted || !_foreground || _routeDepth != 0) return;
+      if (shouldReset == true) await _startNewCountingSession();
+    } finally {
+      _session.setResultsSuspended(false);
+      _resetDialogOpen = false;
+      _syncShortcutCapture();
+    }
+  }
+
+  Future<void> _readCountingTotal() async {
+    if (!mounted ||
+        !_initialized ||
+        !_foreground ||
+        !_countingMode ||
+        _routeDepth != 0 ||
+        _changingMode ||
+        _touchExploration.enabled) return;
+    final message = _moneyCounter.hasCounted
+        ? 'Tổng hiện tại ${_moneyCounter.totalSpeech}. '
+            'Đã đếm ${_moneyCounter.noteCount} tờ.'
+        : 'Chưa đếm tờ tiền nào. Tổng hiện tại không đồng.';
+    await _speech.speak(
+      message,
+      rate: _settings.settings.speechRate,
+      priority: SpeechPriority.result,
+    );
   }
 
   Future<void> _startNewCountingSession() async {
@@ -316,12 +559,11 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp>
       return;
     }
     _changingMode = true;
-    final hadRecognizedNote = _recognition.state.hasResult;
     try {
-      await _session.setVisible(false);
+      // Reset nhanh qua phim cung: khong hien dialog, khong dung camera.
       await _quietFeedback();
       if (!mounted || !_foreground || _routeDepth != 0) return;
-
+      final hadRecognizedNote = _recognition.state.hasResult;
       final previousCount = _moneyCounter.noteCount;
       final previousTotal = _moneyCounter.totalSpeech;
       _moneyCounter.startNewSession();
@@ -329,32 +571,25 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp>
         isMock: _backend.isMock,
         requireClearBeforeAccept: hadRecognizedNote,
       );
-      _recognition.suppressNextScanningPrompt();
+      _backend.setRecognitionLocked(false);
 
       final firstNoteInstruction = hadRecognizedNote
           ? 'Hãy đưa tờ tiền đang ở trước camera ra ngoài, '
               'chờ camera xác nhận trống rồi đưa vào lại.'
-          : 'Sau thông báo này, đưa tờ tiền đầu tiên vào camera.';
+          : 'Đưa tờ tiền đầu tiên vào camera.';
       final announcement = previousCount == 0
           ? 'Đã bắt đầu phiên đếm mới. Tổng hiện tại không đồng. '
               '$firstNoteInstruction'
           : 'Đã kết thúc phiên đếm trước. Đã đếm $previousCount tờ. '
               'Tổng $previousTotal. Đã bắt đầu phiên đếm mới. '
-              'Tổng hiện tại không đồng. '
-              '$firstNoteInstruction';
-      try {
-        await _speech.speak(
-          announcement,
-          rate: _settings.settings.speechRate,
-          priority: SpeechPriority.result,
-        );
-      } catch (error) {
-        debugPrint('Không đọc được thông báo phiên mới: $error');
-      }
+              'Tổng hiện tại không đồng. $firstNoteInstruction';
+      // Cho camera xu ly ngay, khong doi TTS doc het.
+      _run(_speech.speak(
+        announcement,
+        rate: _settings.settings.speechRate,
+        priority: SpeechPriority.result,
+      ));
     } finally {
-      if (mounted && _foreground && _routeDepth == 0) {
-        await _session.setVisible(true);
-      }
       _changingMode = false;
     }
   }
@@ -364,12 +599,12 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp>
     _foreground = state == AppLifecycleState.resumed;
     _syncShortcutCapture();
     if (!_foreground) unawaited(_quietFeedback());
-    _run(_session.setVisible(_foreground && _routeDepth == 0));
+    _run(_session
+        .setVisible(_foreground && _routeDepth == 0 && !_waitingCameraReady));
   }
 
   Future<void> _push(BuildContext context, WidgetBuilder builder) async {
     _routeDepth++;
-    ++_settingsSpeechEpoch; // Discard stale messages when navigating.
     _syncShortcutCapture();
     _run(_session.setVisible(false));
     await _quietFeedback();
@@ -395,6 +630,8 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp>
     _volumeShortcuts.dispose();
     _moneyCounter.dispose();
     _settings.dispose();
+    _touchExploration.removeListener(_onTouchExplorationChanged);
+    _touchExploration.dispose();
     unawaited(_quietFeedback());
     super.dispose();
   }
@@ -418,8 +655,12 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp>
             ? const Scaffold(body: Center(child: CircularProgressIndicator()))
             : Builder(
                 builder: (routeContext) => AnimatedBuilder(
-                      animation: Listenable.merge(
-                          [_recognition, _session, _moneyCounter]),
+                      animation: Listenable.merge([
+                        _recognition,
+                        _session,
+                        _moneyCounter,
+                        _touchExploration
+                      ]),
                       builder: (_, child) {
                         final camera = _backend.cameraController;
                         return RecognitionScreen(
@@ -428,50 +669,83 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp>
                           serviceNotice: _serviceNotice,
                           onRetryServices: () => _run(_initializeServices()),
                           onOpenSettings: () => _openSettings(routeContext),
+                          onSwitchMode: () => _run(_switchMode()),
+                          onNewCountingSession: () =>
+                              _run(_confirmCountingReset()),
+                          onReadCountingTotal: () => _run(_readCountingTotal()),
+                          screenReaderActive: _touchExploration.enabled,
+                          modeTalkBackAnnouncement: _modeTalkBackAnnouncement,
                           onRecoverCamera: () =>
                               _run(_openPermissionRecovery()),
                           cameraPermissionMissing: _cameraPermissionMissing,
                           isMoneyCounting: _countingMode,
                           totalVnd: _moneyCounter.totalVnd,
                           noteCount: _moneyCounter.noteCount,
-                          cameraPreview:
-                              camera != null && camera.value.isInitialized
-                                  ? Center(child: CameraPreview(camera))
-                                  : null,
+                          preparingCamera: _waitingCameraReady,
+                          cameraPreview: !_waitingCameraReady &&
+                                  camera != null &&
+                                  camera.value.isInitialized
+                              ? Center(child: CameraPreview(camera))
+                              : null,
                         );
                       },
                     )),
       );
 
-  // Only configuration announcements are serialized. Recognition results retain
-  // their existing priority and may interrupt camera guidance as before.
-  Future<void> _settingsSpeechQueue = Future<void>.value();
-  int _settingsSpeechEpoch = 0;
-  bool _backNavigationBusy = false;
+  // Setting feedback follows the most recent tap, not a FIFO queue. This
+  // intentionally keeps the recognition/camera TTS priority rules unchanged.
+  Future<void>? _settingsSpeechActive;
+  bool _settingsNavigationBusy = false;
 
-  Future<void> _queueSettingsSpeech(String message, SpeechRateOption rate) {
-    final epoch = _settingsSpeechEpoch;
-    final next = _settingsSpeechQueue.then((_) async {
-      if (!mounted || epoch != _settingsSpeechEpoch || _routeDepth == 0) {
-        return;
+  Future<void> _speakSettingsConfirmation(
+      String message, SpeechRateOption rate) {
+    // SpeechService.speak() invalidates the preceding utterance when text or
+    // rate changes. Only the newest utterance is tracked for navigation.
+    final speaking = _speech.speak(
+      message,
+      rate: rate,
+      priority: SpeechPriority.instruction,
+    );
+    _settingsSpeechActive = speaking;
+    return speaking.whenComplete(() {
+      if (identical(_settingsSpeechActive, speaking)) {
+        _settingsSpeechActive = null;
       }
-      await _speech.speak(
-        message,
-        rate: rate,
-        priority: SpeechPriority.instruction,
-      );
     });
-    // A failed TTS request should not poison the next queued announcement.
-    _settingsSpeechQueue = next.catchError((Object error, StackTrace stack) {
-      debugPrint('Settings speech queue: $error');
-    });
-    return next;
+  }
+
+  Future<void> _changeHardwareShortcuts(bool enabled) async {
+    if (_settingsNavigationBusy || _routeDepth == 0) return;
+    final saving = _settings.setHardwareShortcuts(enabled);
+    _syncShortcutCapture();
+    if (_touchExploration.enabled) {
+      await saving;
+      return;
+    }
+    final speaking = _speakSettingsConfirmation(
+      enabled
+          ? 'Đã bật phím tắt âm lượng. Giữ phím tăng ba giây để đổi chế độ. '
+              'Giữ phím giảm ba giây để xóa phiên đếm ngay, không hỏi lại. '
+              'Nhấn giữ để chỉnh âm lượng liên tục sẽ bị hạn chế.'
+          : 'Đã tắt phím tắt âm lượng. Giữ phím để chỉnh âm lượng liên tục.',
+      _settings.settings.speechRate,
+    );
+    try {
+      await speaking;
+    } finally {
+      await saving;
+    }
   }
 
   Future<void> _changeVibration(bool enabled) async {
-    // The controller updates immediately; persisted writes stay serialized.
+    if (_settingsNavigationBusy || _routeDepth == 0) return;
+    // Update visible state and persist immediately, without waiting for TTS.
     final saving = _settings.setVibration(enabled);
-    final speaking = _queueSettingsSpeech(
+    if (_touchExploration.enabled) {
+      await saving;
+      return;
+    }
+    final speaking = _speakSettingsConfirmation(
       enabled ? 'Đã bật phản hồi rung.' : 'Đã tắt phản hồi rung.',
       _settings.settings.speechRate,
     );
@@ -483,13 +757,18 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp>
   }
 
   Future<void> _changeSpeechRate(SpeechRateOption rate) async {
+    if (_settingsNavigationBusy || _routeDepth == 0) return;
     final saving = _settings.setSpeechRate(rate);
+    if (_touchExploration.enabled) {
+      await saving;
+      return;
+    }
     final label = switch (rate) {
       SpeechRateOption.slow => 'chậm',
       SpeechRateOption.normal => 'vừa',
       SpeechRateOption.fast => 'nhanh',
     };
-    final speaking = _queueSettingsSpeech(
+    final speaking = _speakSettingsConfirmation(
       'Đã chọn tốc độ $label. Đây là tốc độ đọc hiện tại.',
       rate,
     );
@@ -500,27 +779,48 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp>
     }
   }
 
-  // A deliberate back action supersedes pending settings announcements.
-  // Wait for the brief back message before closing the route; _push stops
-  // audio when a route is popped.
+  // Leaving Settings is different from changing a setting: keep the current
+  // confirmation audible until its completion. Never wait for superseded ones.
+  Future<void> _finishCurrentSettingsConfirmation() async {
+    final active = _settingsSpeechActive;
+    if (active == null) return;
+    try {
+      await active.timeout(const Duration(seconds: 20));
+    } on TimeoutException {
+      // The TTS engine may occasionally hang: do not trap a blind user forever.
+      await _speech.stop().catchError((Object error) {
+        debugPrint('Settings TTS timeout: $error');
+      });
+    } catch (error) {
+      debugPrint('Settings TTS completed with error: $error');
+    }
+  }
+
+  // Both the in-app button and Android Back reach this method. Finish the
+  // confirmation, speak the destination, then pop the route.
   Future<void> _announceBackAndPop(
       BuildContext pageContext, String destination) async {
-    if (_backNavigationBusy || !pageContext.mounted) return;
-    _backNavigationBusy = true;
-    ++_settingsSpeechEpoch;
+    if (_settingsNavigationBusy || !pageContext.mounted) return;
+    _settingsNavigationBusy = true;
     try {
-      await _speech.speak(
-        'Đang quay lại $destination.',
-        rate: _settings.settings.speechRate,
-        priority: SpeechPriority.instruction,
-      );
-    } catch (error) {
-      debugPrint('Back navigation TTS: $error');
-    } finally {
+      await _finishCurrentSettingsConfirmation();
+      if (!pageContext.mounted || !_foreground) return;
+      try {
+        if (!_touchExploration.enabled) {
+          await _speech.speak(
+            'Đang quay lại $destination.',
+            rate: _settings.settings.speechRate,
+            priority: SpeechPriority.instruction,
+          );
+        }
+      } catch (error) {
+        debugPrint('Back navigation TTS: $error');
+      }
       if (pageContext.mounted && Navigator.of(pageContext).canPop()) {
         Navigator.of(pageContext).pop();
       }
-      _backNavigationBusy = false;
+    } finally {
+      _settingsNavigationBusy = false;
     }
   }
 
@@ -536,27 +836,46 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp>
                     settingsContext, 'màn hình nhận diện tiền')),
                 onVibrationChanged: (value) => _run(_changeVibration(value)),
                 onSpeechRateChanged: (value) => _run(_changeSpeechRate(value)),
+                onHardwareShortcutsChanged: (value) =>
+                    _run(_changeHardwareShortcuts(value)),
               ),
             )));
   }
 
+  // Do not open Guide while Settings is still saying its latest selection.
+  // When it finishes, _push() starts Guide's normal auto-read narration.
   void _openGuide(BuildContext context) {
-    _run(_push(
-      context,
-      (guideContext) => GuideScreen(
-        onBack: () =>
-            _run(_announceBackAndPop(guideContext, 'màn hình Tùy chọn')),
-        onAutoRead: () => _speech.speak(
-          AppStrings.spokenGuide,
-          rate: _settings.settings.speechRate,
-          priority: SpeechPriority.instruction,
+    if (_settingsNavigationBusy || !context.mounted) return;
+    _settingsNavigationBusy = true;
+    _run(_openGuideAfterSettingsSpeech(context));
+  }
+
+  Future<void> _openGuideAfterSettingsSpeech(BuildContext context) async {
+    try {
+      await _finishCurrentSettingsConfirmation();
+      if (!mounted || !context.mounted || !_foreground) return;
+      _run(_push(
+        context,
+        (guideContext) => GuideScreen(
+          screenReaderActive: _touchExploration.enabled,
+          onBack: () =>
+              _run(_announceBackAndPop(guideContext, 'màn hình Tùy chọn')),
+          onAutoRead: () => _touchExploration.enabled
+              ? Future<void>.value()
+              : _speech.speak(
+                  AppStrings.spokenGuide,
+                  rate: _settings.settings.speechRate,
+                  priority: SpeechPriority.instruction,
+                ),
+          onReadCompleted: () {
+            if (guideContext.mounted) {
+              Navigator.of(guideContext).popUntil((route) => route.isFirst);
+            }
+          },
         ),
-        onReadCompleted: () {
-          if (guideContext.mounted) {
-            Navigator.of(guideContext).popUntil((route) => route.isFirst);
-          }
-        },
-      ),
-    ));
+      ));
+    } finally {
+      _settingsNavigationBusy = false;
+    }
   }
 }

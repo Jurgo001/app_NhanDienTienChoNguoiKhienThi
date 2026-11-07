@@ -4,7 +4,8 @@ import 'package:app_ho_tro_nguoi_khiem_thi/core/constants/app_strings.dart';
 import 'package:app_ho_tro_nguoi_khiem_thi/screens/guide/guide_screen.dart';
 
 void main() {
-  testWidgets('Hướng dẫn hiển thị phím cứng và TTS đề cập đầy đủ',
+  testWidgets(
+      'Hướng dẫn V11 mô tả chuyển chế độ bằng nút và giữ phím chỉnh âm lượng',
       (tester) async {
     await tester.pumpWidget(MaterialApp(
       home: GuideScreen(
@@ -12,13 +13,11 @@ void main() {
         onReadCompleted: () {},
       ),
     ));
-    expect(find.text('Điều khiển bằng phím âm lượng'), findsOneWidget);
-    expect(
-        find.text('Giữ phím tăng âm lượng (+) trong 3 giây'), findsOneWidget);
-    expect(
-        find.text('Giữ phím giảm âm lượng (−) trong 3 giây'), findsOneWidget);
-    expect(find.text('Nhấn ngắn để điều chỉnh âm lượng'), findsOneWidget);
-    expect(AppStrings.spokenGuide.toLowerCase(), contains('tăng âm lượng'));
-    expect(AppStrings.spokenGuide.toLowerCase(), contains('giảm âm lượng'));
+    expect(find.text('Điều khiển chế độ và âm lượng'), findsOneWidget);
+    expect(find.text('Chuyển chế độ'), findsOneWidget);
+    expect(find.text('Tạo phiên đếm mới'), findsOneWidget);
+    expect(find.text('Phím âm lượng'), findsOneWidget);
+    expect(AppStrings.spokenGuide.toLowerCase(), contains('chuyển chế độ'));
+    expect(AppStrings.spokenGuide.toLowerCase(), contains('giữ phím âm lượng'));
   });
 }
