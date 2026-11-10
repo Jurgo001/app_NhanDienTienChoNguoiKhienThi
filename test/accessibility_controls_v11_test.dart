@@ -44,6 +44,8 @@ void main() {
     expect(find.byKey(const Key('switch_mode_button')), findsOneWidget);
     expect(find.byKey(const Key('new_counting_session_button')), findsNothing);
     await tapVisible(tester, find.byKey(const Key('switch_mode_button')));
+    await tester.pump(const Duration(seconds: 60));
+    await tester.pumpAndSettle();
     expect(
         find.byKey(const Key('new_counting_session_button')), findsOneWidget);
     expect(find.byKey(const Key('repeat_latest_result_button')), findsNothing);
@@ -56,6 +58,8 @@ void main() {
     final h = AppHarness();
     await h.mount(tester);
     await tapVisible(tester, find.byKey(const Key('switch_mode_button')));
+    await tester.pump(const Duration(seconds: 60));
+    await tester.pumpAndSettle();
     await tapVisible(
         tester, find.byKey(const Key('new_counting_session_button')));
     expect(find.text('Bắt đầu phiên đếm mới?'), findsOneWidget);

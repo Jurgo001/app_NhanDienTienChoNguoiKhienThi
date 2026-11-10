@@ -10,7 +10,7 @@ abstract final class AppStrings {
       'Để giữ tổng hiện tại, chọn Hủy. '
       'Bước sáu. Phím âm lượng. Mặc định, nhấn hoặc giữ phím âm lượng để chỉnh âm lượng bình thường. '
       'Có thể bật phím tắt giữ ba giây trong phần Tùy chọn nếu cần, nhưng lúc đó không thể giữ phím để chỉnh âm lượng liên tục. '
-      'Khi bật phím tắt và không dùng TalkBack, giữ phím giảm âm lượng ba giây trong chế độ Đếm tiền sẽ xóa phiên ngay mà không hỏi lại. Khi bật chế độ rà trợ năng, phím tắt này sẽ tạm ngừng. '
+      'Khi bật phím tắt và không dùng TalkBack, giữ phím giảm âm lượng ba giây trong chế độ Đếm tiền sẽ phát cảnh báo; giữ phím thêm một lần nữa trong mười lăm giây để xác nhận xóa phiên. Nếu không thao tác, tổng được giữ nguyên. Khi bật chế độ rà trợ năng, phím tắt này sẽ tạm ngừng. '
       'Trong chế độ Đếm tiền, có thể rà vào thẻ tổng tiền để biết tổng và số tờ đã đếm. ';
   static const appTitle = 'Nhận diện tiền Việt Nam';
   static const recognitionTitle = 'Nhận diện mệnh giá';

@@ -21,7 +21,10 @@ class RecognitionScreen extends StatelessWidget {
     this.screenReaderActive = false,
     this.preparingCamera = false,
     this.modeTalkBackAnnouncement,
+    this.flashAccessibilityStatus,
     this.onRecoverCamera,
+    this.cameraRetryRequired = false,
+    this.onRetryCamera,
     this.cameraPermissionMissing = false,
     this.isMoneyCounting = false,
     this.totalVnd = 0,
@@ -41,7 +44,10 @@ class RecognitionScreen extends StatelessWidget {
   final bool screenReaderActive;
   final bool preparingCamera;
   final String? modeTalkBackAnnouncement;
+  final String? flashAccessibilityStatus;
   final VoidCallback? onRecoverCamera;
+  final bool cameraRetryRequired;
+  final VoidCallback? onRetryCamera;
   final bool cameraPermissionMissing;
   final bool isMoneyCounting;
   final int totalVnd;
@@ -68,6 +74,26 @@ class RecognitionScreen extends StatelessWidget {
     return MobilePage(
       background: AppColors.navySoft,
       children: [
+        // Stable TalkBack live-region; not a separate FlutterTts voice.
+        if (screenReaderActive)
+          Semantics(
+            key: const Key('mode_talkback_status'),
+            container: true,
+            liveRegion: modeTalkBackAnnouncement != null,
+            label: modeTalkBackAnnouncement ?? 'Thông báo chuyển chế độ',
+            child: const SizedBox(width: 1, height: 1),
+          ),
+        // A stable live region is politely announced by TalkBack when
+        // its label changes; no second app TTS voice is started.
+        // Keep it out of the camera preview ExcludeSemantics subtree.
+        if (screenReaderActive)
+          Semantics(
+            key: const Key('flash_talkback_status'),
+            container: true,
+            liveRegion: flashAccessibilityStatus != null,
+            label: flashAccessibilityStatus ?? 'Trạng thái đèn flash',
+            child: const SizedBox(width: 1, height: 1),
+          ),
         ExcludeSemantics(
           // Dynamic camera status is read by the app, not by TalkBack focus.
           // Controls and non-changing UI labels elsewhere stay accessible.
@@ -80,39 +106,36 @@ class RecognitionScreen extends StatelessWidget {
         const SizedBox(height: 12),
         if (isMoneyCounting) ...[
           const SizedBox(height: 12),
-          ExcludeSemantics(
-            // Keep changing totals visible; app TTS announces the count.
-            excluding: screenReaderActive,
-            child: Semantics(
-              container: true,
-              label: 'Tổng tiền hiện tại ${VndMoneyText.spoken(totalVnd)}. '
-                  'Đã đếm $noteCount tờ.',
-              child: ExcludeSemantics(
-                child: GestureDetector(
-                  key: const Key('counting_total_card'),
-                  behavior: HitTestBehavior.opaque,
-                  onTap: screenReaderActive ? null : onReadCountingTotal,
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppColors.navy,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: AppColors.yellow),
-                    ),
-                    child: Column(children: [
-                      const Text('TỔNG TIỀN ĐÃ ĐẾM',
-                          style:
-                              TextStyle(color: Colors.white70, fontSize: 14)),
-                      Text('${VndMoneyText.digits(totalVnd)}đ',
-                          style: const TextStyle(
-                              color: AppColors.yellow,
-                              fontSize: 30,
-                              fontWeight: FontWeight.bold)),
-                      Text('Đã đếm $noteCount tờ',
-                          style: const TextStyle(color: Colors.white)),
-                    ]),
+          // The total stays readable on demand by TalkBack.
+          // This is NOT a liveRegion, so no automatic second voice.
+          Semantics(
+            container: true,
+            label: 'Tổng tiền hiện tại ${VndMoneyText.spoken(totalVnd)}. '
+                'Đã đếm $noteCount tờ.',
+            child: ExcludeSemantics(
+              child: GestureDetector(
+                key: const Key('counting_total_card'),
+                behavior: HitTestBehavior.opaque,
+                onTap: screenReaderActive ? null : onReadCountingTotal,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.navy,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.yellow),
                   ),
+                  child: Column(children: [
+                    const Text('TỔNG TIỀN ĐÃ ĐẾM',
+                        style: TextStyle(color: Colors.white70, fontSize: 14)),
+                    Text('${VndMoneyText.digits(totalVnd)}đ',
+                        style: const TextStyle(
+                            color: AppColors.yellow,
+                            fontSize: 30,
+                            fontWeight: FontWeight.bold)),
+                    Text('Đã đếm $noteCount tờ',
+                        style: const TextStyle(color: Colors.white)),
+                  ]),
                 ),
               ),
             ),
@@ -128,10 +151,22 @@ class RecognitionScreen extends StatelessWidget {
           ),
         if (serviceNotice != null) ...[
           Text(serviceNotice!, style: const TextStyle(color: AppColors.yellow)),
-          TextButton(
-              onPressed: onRetryServices,
-              child: const Text('Thử lại âm thanh / cài đặt',
-                  style: TextStyle(color: Colors.white))),
+          if (!cameraRetryRequired)
+            TextButton(
+                onPressed: onRetryServices,
+                child: const Text('Thử lại âm thanh / cài đặt',
+                    style: TextStyle(color: Colors.white))),
+        ],
+        if (cameraRetryRequired && !isMockBackend) ...[
+          const SizedBox(height: 12),
+          AccessibleButton(
+            key: const Key('retry_camera_after_timeout_button'),
+            label: 'Thử mở lại camera',
+            semanticLabel: 'Thử mở lại camera và kiểm tra nhận diện',
+            icon: Icons.refresh,
+            onPressed: onRetryCamera,
+          ),
+          const SizedBox(height: 12),
         ],
         ExcludeSemantics(
           // Camera preview and its disappearing placeholder are visual only.
@@ -258,6 +293,7 @@ class RecognitionScreen extends StatelessWidget {
               semanticLabel: 'Bắt đầu phiên đếm mới, yêu cầu xác nhận',
               icon: Icons.restart_alt,
               primary: false,
+              destructive: true,
               onPressed: onNewCountingSession,
             ),
           ),
