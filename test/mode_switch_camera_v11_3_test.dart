@@ -22,7 +22,7 @@ void main() {
     await unmount(tester);
   });
 
-  testWidgets('Phim giam giu ba giay reset ngay, khong dialog', (tester) async {
+  testWidgets('Phim giam phai giu hai lan de xoa phien', (tester) async {
     final h = AppHarness();
     h.settings.saved = const AppSettings(hardwareShortcutsEnabled: true);
     await h.mount(tester);
@@ -31,11 +31,22 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('100.000đ'), findsOneWidget);
     final beforeStop = h.backend.stops;
+
+    // The first physical hold only warns, not resets.
     await HardwareVolumeShortcuts.simulateHold(VolumeHoldAction.newSession);
     await tester.pumpAndSettle();
     expect(find.byType(AlertDialog), findsNothing);
-    expect(find.text('0đ'), findsOneWidget);
+    expect(find.text('100.000đ'), findsOneWidget);
     expect(h.backend.stops, beforeStop);
+    expect(
+        h.speech.spoken.any(
+            (text) => text.contains('Giữ phím giảm âm lượng thêm lần nữa')),
+        isTrue);
+
+    // Only a second independent hold confirms reset.
+    await HardwareVolumeShortcuts.simulateHold(VolumeHoldAction.newSession);
+    await tester.pumpAndSettle();
+    expect(find.text('0đ'), findsOneWidget);
     await unmount(tester);
   });
 

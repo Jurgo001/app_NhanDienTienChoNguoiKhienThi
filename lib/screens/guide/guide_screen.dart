@@ -67,12 +67,16 @@ class _GuideScreenState extends State<GuideScreen> {
         child: MobilePage(
           backLabel: 'Quay lại',
           onBack: widget.onBack,
+          background: AppColors.navySoft,
           children: [
             Semantics(
               header: true,
               child: Text(
                 AppStrings.guideHeading,
-                style: Theme.of(context).textTheme.headlineMedium,
+                style: Theme.of(context)
+                    .textTheme
+                    .headlineMedium
+                    ?.copyWith(color: Colors.white),
               ),
             ),
             const SizedBox(height: 26),
@@ -99,7 +103,10 @@ class _GuideScreenState extends State<GuideScreen> {
               header: true,
               child: Text(
                 'Điều khiển chế độ và âm lượng',
-                style: Theme.of(context).textTheme.titleLarge,
+                style: Theme.of(context)
+                    .textTheme
+                    .titleLarge
+                    ?.copyWith(color: Colors.white),
               ),
             ),
             const SizedBox(height: 20),
@@ -119,13 +126,13 @@ class _GuideScreenState extends State<GuideScreen> {
               number: 6,
               title: 'Phím âm lượng',
               detail:
-                  'Mặc định, nhấn hoặc giữ phím cộng và trừ để chỉnh âm lượng bình thường. Trong Tùy chọn có thể bật phím tắt giữ ba giây, nhưng khi bật sẽ không giữ phím để chỉnh âm lượng liên tục. Nếu muốn nghe lại mệnh giá, đưa tờ tiền ra khỏi camera, rồi đưa vào lại.',
+                  'Mặc định, nhấn hoặc giữ phím cộng và trừ để chỉnh âm lượng bình thường. Trong Tùy chọn có thể bật phím tắt giữ ba giây. Khi bật và không dùng TalkBack, giữ phím giảm ba giây lần một để nghe cảnh báo, giữ lại lần hai trong 15 giây để xác nhận xóa phiên; không thao tác để hủy. Nếu muốn nghe lại mệnh giá, đưa tờ tiền ra khỏi camera, rồi đưa vào lại.',
             ),
             if (_speechError != null)
               Semantics(
                 liveRegion: true,
                 child: Text(_speechError!,
-                    style: const TextStyle(color: AppColors.navy)),
+                    style: const TextStyle(color: AppColors.paleBlue)),
               ),
             const SizedBox(height: 40),
           ],
@@ -161,13 +168,13 @@ class _GuideStep extends StatelessWidget {
                 height: 38,
                 alignment: Alignment.center,
                 decoration: const BoxDecoration(
-                  color: AppColors.navy,
+                  color: AppColors.yellow,
                   shape: BoxShape.circle,
                 ),
                 child: Text(
                   '$number',
                   style: const TextStyle(
-                    color: AppColors.yellow,
+                    color: AppColors.navy,
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
                   ),
@@ -178,12 +185,16 @@ class _GuideStep extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: Theme.of(context).textTheme.titleMedium),
+                    Text(title,
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium
+                            ?.copyWith(color: Colors.white)),
                     const SizedBox(height: 6),
                     Text(
                       detail,
                       style: const TextStyle(
-                        color: AppColors.muted,
+                        color: AppColors.paleBlue,
                         fontSize: 15,
                         height: 1.5,
                       ),

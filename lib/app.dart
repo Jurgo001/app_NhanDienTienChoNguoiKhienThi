@@ -57,7 +57,10 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp>
   bool _countingMode = false;
   bool _changingMode = false;
   bool _waitingCameraReady = false;
+  bool _cameraRetryRequired = false;
+  DateTime? _hardwareResetPendingUntil;
   String? _modeTalkBackAnnouncement;
+  String? _flashAccessibilityStatus;
   bool _resetDialogOpen = false;
   int _routeDepth = 0;
   String? _serviceNotice;
@@ -99,8 +102,8 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp>
       },
     );
 
-    // Khi backend thông báo flash, Controller sẽ phát giọng nói.
-    _backend.onFlashAnnouncement = _recognition.announceFlashStatus;
+    // Flash uses TalkBack live region when available; app TTS otherwise.
+    _backend.onFlashAnnouncement = _handleFlashAnnouncement;
 
     _session = ScanSession(
       backend: _backend,
@@ -159,6 +162,22 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp>
     });
     _syncShortcutCapture();
     _start();
+  }
+
+  /// TalkBack owns announcements when touch exploration is enabled.
+  /// App TTS remains unchanged when TalkBack is off. The screen exposes a
+  /// stable semantic live region; no explicit announcement interrupts TalkBack.
+  void _handleFlashAnnouncement(String message) {
+    if (!mounted || !_initialized || !_foreground || _routeDepth != 0) return;
+    if (!_touchExploration.enabled) {
+      _recognition.announceFlashStatus(message);
+      return;
+    }
+    // Only real changes should update the live region. Rebuilds alone must
+    // never repeat an identical flash status to the screen reader.
+    if (_flashAccessibilityStatus == message) return;
+    setState(() => _flashAccessibilityStatus = message);
+    debugPrint('[FLASH_A11Y] $message');
   }
 
   void _onTouchExplorationChanged() {
@@ -300,7 +319,7 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp>
           await _switchMode();
           break;
         case VolumeHoldAction.newSession:
-          if (_countingMode) await _startNewCountingSession();
+          if (_countingMode) await _confirmHardwareCountingReset();
           break;
       }
     } catch (error) {
@@ -313,6 +332,9 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp>
   }
 
   void _syncShortcutCapture() {
+    if (!_foreground || _routeDepth != 0 || _touchExploration.enabled) {
+      _hardwareResetPendingUntil = null;
+    }
     _run(_volumeShortcuts.setEnabled(
       _initialized &&
           _foreground &&
@@ -324,24 +346,41 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp>
     ));
   }
 
+  // TalkBack does not expose a reliable utterance-complete callback.
+  // Estimate Vietnamese syllable duration; camera stays closed while waiting.
+  Duration _estimatedModeSummaryWait(String message) {
+    final syllables = message.trim().split(RegExp(r'\s+')).length;
+    final milliseconds = (syllables * 520 + 1800).clamp(6000, 12000).toInt();
+    return Duration(milliseconds: milliseconds);
+  }
+
   Future<void> _switchMode() async {
     if (_changingMode || !_initialized || !_foreground || _routeDepth != 0) {
       return;
     }
     _changingMode = true;
+    _hardwareResetPendingUntil = null;
 
     final talkBackMode = _touchExploration.enabled;
     debugPrint('[MODE_A11Y] touch exploration: $talkBackMode');
-    if (mounted) setState(() => _modeTalkBackAnnouncement = null);
     // Hide preview until the first real AI frame has completed. The preview
     // opening alone does not prove that the detector can accept a banknote.
-    if (mounted) setState(() => _waitingCameraReady = true);
+    if (mounted) {
+      setState(() {
+        _waitingCameraReady = true;
+        _cameraRetryRequired = false;
+        if (_serviceNotice?.startsWith('Camera') == true) {
+          _serviceNotice = null;
+        }
+      });
+    }
     try {
       // Phase 1: stop the previous image stream; no frame can enter a new
       // counting session while the mode announcement is still speaking.
       debugPrint('[MODE_READY] stopping old camera stream');
       await _session.setVisible(false, releaseCamera: false);
       await _quietFeedback();
+      _session.setResultsSuspended(false);
       if (!mounted || !_foreground || _routeDepth != 0) return;
 
       final enterCounting = !_countingMode;
@@ -377,11 +416,23 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp>
       // Absolutely no camera stream starts before this await completes.
       try {
         debugPrint('[MODE_READY] speaking mode announcement');
-        await _speech.speak(
-          announcement,
-          rate: _settings.settings.speechRate,
-          priority: SpeechPriority.result,
-        );
+        if (talkBackMode) {
+          final talkBackModeMessage = enterCounting
+              ? 'Đã chuyển sang chế độ đếm tiền.'
+              : 'Đã chuyển sang chế độ nhận diện tiền.';
+          if (mounted)
+            setState(() => _modeTalkBackAnnouncement = talkBackModeMessage);
+          final estimatedWait = _estimatedModeSummaryWait(talkBackModeMessage);
+          debugPrint('[MODE_A11Y] short mode via TalkBack; delay: '
+              '${estimatedWait.inMilliseconds} ms');
+          await Future<void>.delayed(estimatedWait);
+        } else {
+          await _speech.speak(
+            announcement,
+            rate: _settings.settings.speechRate,
+            priority: SpeechPriority.result,
+          );
+        }
       } catch (error) {
         debugPrint('[MODE_READY] mode speech error: $error');
       }
@@ -411,7 +462,12 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp>
               ? 'Camera đang chờ bạn đưa tờ tiền cũ ra khỏi khung để tránh cộng trùng.'
               : 'Camera chưa xử lý được khung hình đầu tiên. Hãy thử mở lại camera.';
           debugPrint('[MODE_READY] not ready: $problem');
-          setState(() => _serviceNotice = problem);
+          // Invalidate counting on timeout; never count a late AI frame.
+          _session.setResultsSuspended(true);
+          setState(() {
+            _serviceNotice = problem;
+            _cameraRetryRequired = true;
+          });
           try {
             await _speech.speak(
               problem,
@@ -454,6 +510,100 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp>
     }
   }
 
+  /// Manual recovery for an 8-second readiness timeout.
+  /// No detection is delivered until the retry processes a usable AI frame.
+  Future<void> _retryCameraAfterTimeout() async {
+    if (!mounted ||
+        !_initialized ||
+        !_foreground ||
+        _changingMode ||
+        _routeDepth != 0 ||
+        !_cameraRetryRequired) return;
+    _changingMode = true;
+    setState(() {
+      _cameraRetryRequired = false;
+      _waitingCameraReady = true;
+      _serviceNotice = null;
+    });
+    try {
+      await _session.setVisible(false, releaseCamera: true);
+      if (!mounted || !_foreground || _routeDepth != 0) return;
+      _recognition.startScanning(
+        isMock: _backend.isMock,
+        // Do not re-count a note already present in front of the camera.
+        requireClearBeforeAccept: _countingMode,
+      );
+      _session.setModeFeedbackSpeechActive(true);
+      _session.armCameraReadiness();
+      _session.setResultsSuspended(false);
+      await _session.setVisible(true);
+      if (!mounted || !_foreground || _routeDepth != 0) return;
+      final ready = await _session.waitForCameraReadiness(
+        timeout: const Duration(seconds: 8),
+      );
+      if (!mounted || !_foreground || _routeDepth != 0) return;
+      if (!ready) {
+        _session.setResultsSuspended(true);
+        const message = 'Camera vẫn chưa sẵn sàng. '
+            'Hãy kiểm tra quyền camera hoặc chọn Thử mở lại camera.';
+        setState(() {
+          _serviceNotice = message;
+          _cameraRetryRequired = true;
+        });
+        if (!_touchExploration.enabled) {
+          await _speech.speak(message,
+              rate: _settings.settings.speechRate,
+              priority: SpeechPriority.instruction);
+        }
+        return;
+      }
+      if (!_touchExploration.enabled) {
+        await _speech.speak(
+          'Camera đã sẵn sàng. Bạn có thể tiếp tục nhận diện.',
+          rate: _settings.settings.speechRate,
+          priority: SpeechPriority.guidance,
+        );
+      }
+    } finally {
+      _session.setModeFeedbackSpeechActive(false);
+      if (mounted) setState(() => _waitingCameraReady = false);
+      _changingMode = false;
+    }
+  }
+
+  /// Require two separate Volume-down holds before discarding a counted total.
+  /// The first hold only warns. The second hold within 15 seconds confirms.
+  Future<void> _confirmHardwareCountingReset() async {
+    if (!mounted ||
+        !_initialized ||
+        !_foreground ||
+        !_countingMode ||
+        _changingMode ||
+        _routeDepth != 0 ||
+        _touchExploration.enabled) return;
+    final now = DateTime.now();
+    final pending = _hardwareResetPendingUntil;
+    if (pending != null && now.isBefore(pending)) {
+      _hardwareResetPendingUntil = null;
+      await _startNewCountingSession();
+      return;
+    }
+    _hardwareResetPendingUntil = null;
+    await _quietFeedback();
+    if (!mounted || !_foreground || _routeDepth != 0 || !_countingMode) return;
+    _hardwareResetPendingUntil = DateTime.now().add(
+      const Duration(seconds: 15),
+    );
+    _run(_speech.speak(
+      'Sắp xóa phiên đếm. Tổng hiện tại ${_moneyCounter.totalSpeech}. '
+      'Đã đếm ${_moneyCounter.noteCount} tờ. '
+      'Giữ phím giảm âm lượng thêm lần nữa trong mười lăm giây '
+      'để xác nhận xóa. Không thao tác để hủy.',
+      rate: _settings.settings.speechRate,
+      priority: SpeechPriority.instruction,
+    ));
+  }
+
   Future<void> _confirmCountingReset() async {
     if (!mounted ||
         !_initialized ||
@@ -466,6 +616,7 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp>
     }
     final context = _navigatorKey.currentContext;
     if (context == null) return;
+    _hardwareResetPendingUntil = null;
     _resetDialogOpen = true;
     _syncShortcutCapture();
     // Tam ngung NHAN KET QUA, khong dung hoac dispose camera.
@@ -583,12 +734,22 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp>
           : 'Đã kết thúc phiên đếm trước. Đã đếm $previousCount tờ. '
               'Tổng $previousTotal. Đã bắt đầu phiên đếm mới. '
               'Tổng hiện tại không đồng. $firstNoteInstruction';
-      // Cho camera xu ly ngay, khong doi TTS doc het.
-      _run(_speech.speak(
-        announcement,
-        rate: _settings.settings.speechRate,
-        priority: SpeechPriority.result,
-      ));
+      // Camera tiep tuc xu ly ngay, khong cho thong bao reset doc xong.
+      // Chi TalkBack doc thong bao reset khi bat; khong phat app TTS trung.
+      if (_touchExploration.enabled) {
+        if (mounted) {
+          setState(() {
+            _modeTalkBackAnnouncement =
+                'Đã bắt đầu phiên đếm mới. Tổng hiện tại không đồng.';
+          });
+        }
+      } else {
+        _run(_speech.speak(
+          announcement,
+          rate: _settings.settings.speechRate,
+          priority: SpeechPriority.result,
+        ));
+      }
     } finally {
       _changingMode = false;
     }
@@ -675,8 +836,11 @@ class _MoneyRecognitionAppState extends State<MoneyRecognitionApp>
                           onReadCountingTotal: () => _run(_readCountingTotal()),
                           screenReaderActive: _touchExploration.enabled,
                           modeTalkBackAnnouncement: _modeTalkBackAnnouncement,
+                          flashAccessibilityStatus: _flashAccessibilityStatus,
                           onRecoverCamera: () =>
                               _run(_openPermissionRecovery()),
+                          cameraRetryRequired: _cameraRetryRequired,
+                          onRetryCamera: () => _run(_retryCameraAfterTimeout()),
                           cameraPermissionMissing: _cameraPermissionMissing,
                           isMoneyCounting: _countingMode,
                           totalVnd: _moneyCounter.totalVnd,

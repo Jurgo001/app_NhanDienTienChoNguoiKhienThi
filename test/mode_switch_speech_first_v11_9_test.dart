@@ -1,34 +1,13 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:app_ho_tro_nguoi_khiem_thi/app.dart';
-import 'package:app_ho_tro_nguoi_khiem_thi/core/models/app_settings.dart';
 import 'package:app_ho_tro_nguoi_khiem_thi/models/denomination.dart';
-import 'package:app_ho_tro_nguoi_khiem_thi/services/speech_service.dart';
 import 'support/app_fakes.dart';
-
-class _HoldModeSpeech extends TestSpeech {
-  Completer<void>? modeGate;
-
-  @override
-  Future<void> speak(
-    String text, {
-    SpeechRateOption rate = SpeechRateOption.normal,
-    SpeechPriority priority = SpeechPriority.instruction,
-  }) async {
-    spoken.add(text);
-    rates.add(rate);
-    if (text.contains('Đã chuyển sang chế độ') && modeGate != null) {
-      await modeGate!.future;
-    }
-  }
-}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-
-  testWidgets('TalkBack bat: phai doc xong truoc khi khoi dong camera dem',
+  testWidgets('TalkBack full mode summary; camera opens only after delay',
       (tester) async {
     const channel = MethodChannel('money_recognition/touch_exploration');
     tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
@@ -37,9 +16,9 @@ void main() {
     );
     addTearDown(() => tester.binding.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, null));
-
     final backend = TestBackend();
-    final speech = _HoldModeSpeech();
+    final speech = TestSpeech();
+    final semantics = tester.ensureSemantics();
     await tester.pumpWidget(MoneyRecognitionApp(
       backend: backend,
       speechService: speech,
@@ -47,36 +26,30 @@ void main() {
       settingsService: MemorySettings(),
     ));
     await tester.pumpAndSettle();
-
-    // Simulate a note that has already been recognized before switching.
-    backend.recognize(Denomination.vnd50000);
-    await tester.pumpAndSettle();
-
-    final before = backend.callbacks.length;
-    final gate = Completer<void>();
-    speech.modeGate = gate;
-    final switchButton = find.byKey(const Key('switch_mode_button'));
-    await tester.ensureVisible(switchButton);
-    await tester.pumpAndSettle();
-    await tester.tap(switchButton);
-    await tester.pump(const Duration(milliseconds: 150));
-
-    // TalkBack enabled MUST NOT skip the app speech and start early.
+    final streams = backend.callbacks.length;
+    final spokenBefore = speech.spoken.length;
+    await tester.ensureVisible(find.byKey(const Key('switch_mode_button')));
+    await tester.tap(find.byKey(const Key('switch_mode_button')));
+    await tester.pump();
+    final node =
+        tester.widget<Semantics>(find.byKey(const Key('mode_talkback_status')));
+    expect(node.properties.liveRegion, isTrue);
+    expect(node.properties.label, contains('Đã chuyển sang chế độ đếm tiền'));
     expect(
-        speech.spoken.any((x) => x.contains('Đã chuyển sang chế độ đếm tiền')),
-        isTrue);
-    expect(backend.callbacks.length, before);
-
-    gate.complete();
+        speech.spoken
+            .skip(spokenBefore)
+            .where((m) => m.contains('Đã chuyển sang chế độ')),
+        isEmpty);
+    expect(backend.callbacks.length, streams);
+    await tester.pump(const Duration(seconds: 5));
+    expect(backend.callbacks.length, streams);
+    await tester.pump(const Duration(seconds: 60));
     await tester.pumpAndSettle();
-    expect(backend.callbacks.length, greaterThan(before));
-
-    // A preloaded banknote can be accepted after narration with no forced
-    // empty-camera frame; the existing controller then prevents duplicates.
+    expect(backend.callbacks.length, greaterThan(streams));
     backend.recognize(Denomination.vnd50000);
     await tester.pumpAndSettle();
-    expect(find.text('0đ'), findsNothing);
-    expect(speech.spoken.any((x) => x.contains('Tổng hiện tại')), isTrue);
+    expect(find.text('50.000đ'), findsOneWidget);
     await unmount(tester);
+    semantics.dispose();
   });
 }

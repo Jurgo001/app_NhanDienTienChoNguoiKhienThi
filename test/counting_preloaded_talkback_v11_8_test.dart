@@ -20,16 +20,32 @@ Widget _screen({required bool talkBack, required int total}) {
 }
 
 void main() {
-  testWidgets('TalkBack khong doc tong tien dong khi camera cap nhat',
+  testWidgets('TalkBack duyet duoc tong tien, nhung khong liveRegion',
       (tester) async {
     final semantics = tester.ensureSemantics();
     await tester.pumpWidget(_screen(talkBack: true, total: 0));
     expect(find.text('0đ'), findsOneWidget);
-    expect(find.bySemanticsLabel(RegExp('Tổng tiền hiện tại')), findsNothing);
+    expect(find.bySemanticsLabel(RegExp('Tổng tiền hiện tại')), findsOneWidget);
+    expect(
+      find.byWidgetPredicate((widget) =>
+          widget is Semantics &&
+          (widget.properties.label?.startsWith('Tổng tiền hiện tại') ??
+              false) &&
+          widget.properties.liveRegion == true),
+      findsNothing,
+    );
     expect(find.byKey(const Key('switch_mode_button')), findsOneWidget);
     await tester.pumpWidget(_screen(talkBack: true, total: 100000));
     expect(find.text('100.000đ'), findsOneWidget);
-    expect(find.bySemanticsLabel(RegExp('Tổng tiền hiện tại')), findsNothing);
+    expect(find.bySemanticsLabel(RegExp('Tổng tiền hiện tại')), findsOneWidget);
+    expect(
+      find.byWidgetPredicate((widget) =>
+          widget is Semantics &&
+          (widget.properties.label?.startsWith('Tổng tiền hiện tại') ??
+              false) &&
+          widget.properties.liveRegion == true),
+      findsNothing,
+    );
     semantics.dispose();
   });
 

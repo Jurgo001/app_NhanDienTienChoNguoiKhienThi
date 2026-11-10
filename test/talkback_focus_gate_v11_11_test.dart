@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:app_ho_tro_nguoi_khiem_thi/app.dart';
 import 'package:app_ho_tro_nguoi_khiem_thi/core/models/app_settings.dart';
 import 'package:app_ho_tro_nguoi_khiem_thi/services/speech_service.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -36,7 +35,8 @@ class _ControlledSpeech extends TestSpeech {
 // Check the real accessibility semantics tree, not the widget tree.
 // ExcludeSemantics hides nodes from TalkBack without removing UI widgets.
 bool _hasAccessibilityLabel(WidgetTester tester, String label) {
-  final root = tester.binding.pipelineOwner.semanticsOwner?.rootSemanticsNode;
+  final root =
+      tester.binding.renderViews.first.owner?.semanticsOwner?.rootSemanticsNode;
   if (root == null) return false;
 
   bool found = false;
@@ -113,6 +113,10 @@ void main() {
     speech.modeGate.complete();
     await tester.pumpAndSettle();
     expect(_hasAccessibilityLabel(tester, 'Chuyển chế độ'), isTrue);
+    // Finish the estimated TalkBack wait before unmounting.
+    // This does not change the app or speech/camera behavior.
+    await tester.pump(const Duration(seconds: 60));
+    await tester.pumpAndSettle();
     await unmount(tester);
     handle.dispose();
   });

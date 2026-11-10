@@ -35,12 +35,16 @@ class SettingsScreen extends StatelessWidget {
       child: MobilePage(
         backLabel: 'Quay lại camera',
         onBack: onBack,
+        background: AppColors.navySoft,
         children: [
           Semantics(
             header: true,
             child: Text(
               AppStrings.settingsTitle,
-              style: Theme.of(context).textTheme.headlineMedium,
+              style: Theme.of(context)
+                  .textTheme
+                  .headlineMedium
+                  ?.copyWith(color: Colors.white),
             ),
           ),
           const SizedBox(height: 30),
@@ -56,7 +60,10 @@ class SettingsScreen extends StatelessWidget {
           ),
           const SizedBox(height: 32),
           Text(AppStrings.vibration,
-              style: Theme.of(context).textTheme.titleMedium),
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(color: Colors.white)),
           const SizedBox(height: 10),
           _switch(
             key: const Key('vibration_switch'),
@@ -66,7 +73,10 @@ class SettingsScreen extends StatelessWidget {
           ),
           const SizedBox(height: 30),
           Text(AppStrings.speechRate,
-              style: Theme.of(context).textTheme.titleMedium),
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(color: Colors.white)),
           const SizedBox(height: 12),
           Material(
             color: Colors.white,
@@ -92,7 +102,10 @@ class SettingsScreen extends StatelessWidget {
           const SizedBox(height: 30),
           const SizedBox(height: 28),
           Text('Phím tắt âm lượng (tùy chọn)',
-              style: Theme.of(context).textTheme.titleMedium),
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(color: Colors.white)),
           const SizedBox(height: 10),
           _switch(
             key: const Key('hardware_shortcuts_switch'),
@@ -104,14 +117,14 @@ class SettingsScreen extends StatelessWidget {
           const Text(
             'Mặc định tắt để giữ phím + và − chỉnh âm lượng liên tục. '
             'Khi bật và không dùng TalkBack: giữ + ba giây để đổi chế độ; '
-            'giữ − ba giây trong chế độ Đếm tiền để reset ngay, không xác nhận. '
+            'giữ − ba giây lần một để nghe cảnh báo; giữ lại lần hai trong 15 giây để xác nhận xóa phiên. '
             'Khi bật, giữ phím sẽ không còn điều chỉnh âm lượng liên tục. '
             'Phím tắt tự tạm ngừng khi chế độ rà trợ năng hoạt động.',
-            style: TextStyle(color: AppColors.muted, height: 1.5),
+            style: TextStyle(color: AppColors.paleBlue, height: 1.5),
           ),
           const Text(
             'Thay đổi được lưu tự động và giữ lại khi mở ứng dụng.',
-            style: TextStyle(color: AppColors.muted, height: 1.5),
+            style: TextStyle(color: AppColors.paleBlue, height: 1.5),
           ),
           const Spacer(),
         ],
@@ -153,6 +166,7 @@ class SettingsScreen extends StatelessWidget {
                         value ? 'Đang bật' : 'Đang tắt',
                         style: const TextStyle(
                           fontSize: 16,
+                          color: AppColors.navy,
                           fontWeight: FontWeight.w700,
                         ),
                       ),

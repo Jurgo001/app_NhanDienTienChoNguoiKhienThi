@@ -25,7 +25,7 @@ void main() {
       RecognitionUiStatus.scanning,
     ]) {
       await tester.pumpWidget(_screen(status));
-      expect(find.bySemanticsLabel(_oldModeText), findsNothing);
+      expect(find.bySemanticsLabel(_oldModeText), findsOneWidget);
       expect(find.bySemanticsLabel(RegExp(r'^Trạng thái:')), findsNothing);
       expect(find.byKey(const Key('open_settings_button')), findsOneWidget);
     }

@@ -41,7 +41,7 @@ void main() {
     recognition.dispose();
   });
 
-  testWidgets('TalkBack bat: TTS app doc du thong bao truoc khi mo camera',
+  testWidgets('TalkBack bat: mode summary via liveRegion; app TTS silent',
       (tester) async {
     const channel = MethodChannel('money_recognition/touch_exploration');
     tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
@@ -69,8 +69,12 @@ void main() {
         speech.spoken
             .skip(before)
             .where((x) => x.contains('Đã chuyển sang chế độ')),
-        isNotEmpty);
+        isEmpty);
     expect(find.text('0đ'), findsOneWidget);
+    // Finish the estimated TalkBack wait before unmounting.
+    // This does not change the app or speech/camera behavior.
+    await tester.pump(const Duration(seconds: 60));
+    await tester.pumpAndSettle();
     await unmount(tester);
   });
 }

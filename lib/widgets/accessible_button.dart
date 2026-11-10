@@ -10,6 +10,7 @@ class AccessibleButton extends StatelessWidget {
     required this.onPressed,
     this.icon,
     this.primary = true,
+    this.destructive = false,
     this.semanticLabel,
   });
 
@@ -17,6 +18,7 @@ class AccessibleButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final IconData? icon;
   final bool primary;
+  final bool destructive;
   final String? semanticLabel;
 
   @override
@@ -37,16 +39,21 @@ class AccessibleButton extends StatelessWidget {
         if (states.contains(WidgetState.disabled)) {
           return AppColors.paleBlue;
         }
-        return primary ? AppColors.yellow : AppColors.surface;
+        return destructive
+            ? AppColors.error
+            : (primary ? AppColors.yellow : AppColors.surface);
       }),
       foregroundColor: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.disabled)) {
           return AppColors.muted;
         }
-        return AppColors.navy;
+        return destructive ? Colors.white : AppColors.navy;
       }),
       side: WidgetStatePropertyAll(
-        BorderSide(color: primary ? AppColors.yellow : AppColors.border),
+        BorderSide(
+            color: destructive
+                ? AppColors.error
+                : (primary ? AppColors.yellow : AppColors.border)),
       ),
       textStyle: const WidgetStatePropertyAll(
         TextStyle(fontSize: 16, fontWeight: FontWeight.w700),

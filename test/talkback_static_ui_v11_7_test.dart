@@ -36,7 +36,7 @@ void main() {
     expect(find.bySemanticsLabel(RegExp(r'^Trạng thái:')), findsNothing);
     expect(
         find.bySemanticsLabel(RegExp('Đã chuyển sang chế độ nhận diện tiền')),
-        findsNothing);
+        findsOneWidget);
     expect(find.byKey(const Key('open_settings_button')), findsOneWidget);
     await tester.pumpWidget(
       _screen(talkback: true, status: RecognitionUiStatus.scanning),
